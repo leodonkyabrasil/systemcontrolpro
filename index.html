@@ -1,0 +1,3379 @@
+<!DOCTYPE html><html lang="pt-BR"> <head>
+<meta charset="UTF-8"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>System Control Pro - Gestão Multiempresas</title> 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script> 
+<style> 
+:root { --primary-color: #2c3e50;
+ --primary-light: #34495e;
+ --primary-dark: #1a252f;
+ --secondary-color: #ecf0f1;
+ --text-color: #2c3e50;
+ --text-light: #7f8c8d;
+ --success-color: #27ae60;
+ --error-color: #e74c3c;
+ --warning-color: #f39c12;
+ --info-color: #3498db;
+ --border-radius: 8px;
+ --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+ --transition: all 0.3s ease; }
+ 
+     .theme-pink {
+        --primary-color: #e84393;
+        --primary-light: #fd79a8;
+        --primary-dark: #b33974;
+        --secondary-color: #ffeaa7;
+    }
+
+    .theme-blue {
+        --primary-color: #0984e3;
+        --primary-light: #74b9ff;
+        --primary-dark: #0652a3;
+        --secondary-color: #dfe6e9;
+    }
+
+    .theme-green {
+        --primary-color: #00b894;
+        --primary-light: #55efc4;
+        --primary-dark: #008066;
+        --secondary-color: #d1f7e8;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+        background-color: #f9f9f9;
+        color: var(--text-color);
+        line-height: 1.6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 20px;
+    }
+
+    .login-box {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--box-shadow);
+        text-align: center;
+    }
+
+    .login-logo {
+        margin-bottom: 1.5rem;
+    }
+
+    .login-logo h1 {
+        font-size: 2rem;
+        color: var(--primary-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .login-logo p {
+        color: var(--text-light);
+    }
+
+    .login-form .form-group {
+        margin-bottom: 1.2rem;
+        text-align: left;
+    }
+
+    .login-form label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .login-form input, .login-form select {
+        width: 100%;
+        padding: 0.85rem;
+        border: 1px solid #ddd;
+        border-radius: var(--border-radius);
+        font-family: inherit;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .login-form input:focus, .login-form select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+    }
+
+    .btn {
+        padding: 0.85rem 1.5rem;
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-weight: 500;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .app-container {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        background-color: #f9f9f9;
+    }
+
+    header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        box-shadow: var(--box-shadow);
+    }
+
+    .logo h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .logo p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .user-info i {
+        font-size: 1.2rem;
+    }
+
+    .container {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .tabs {
+        display: flex;
+        background-color: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--box-shadow);
+        flex-wrap: wrap;
+    }
+
+    .tab {
+        padding: 1rem 1.5rem;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tab.active {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: bold;
+    }
+
+    .tab:hover:not(.active) {
+        background-color: var(--primary-light);
+        color: white;
+    }
+
+    .tab-content {
+        display: none;
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--box-shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+        margin-bottom: 1rem;
+        color: var(--primary-dark);
+        border-bottom: 2px solid var(--primary-light);
+        padding-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--box-shadow);
+        text-align: center;
+        color: white;
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-card h3 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background-color: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: white;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .btn-danger {
+        background-color: var(--error-color);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+    }
+
+    .btn-secondary {
+        background-color: #bdc3c7;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background-color: #95a5a6;
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background-color: #219653;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    th {
+        background-color: var(--primary-light);
+        color: white;
+        font-weight: 600;
+    }
+
+    tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-buttons .btn {
+        padding: 0.5rem;
+    }
+
+    .admin-section {
+        background-color: #fff8f8;
+        border-left: 4px solid var(--error-color);
+        padding: 1rem;
+        margin: 1.5rem 0;
+        border-radius: var(--border-radius);
+    }
+
+    .admin-section h3 {
+        color: var(--error-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-light);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: var(--border-radius);
+        font-family: inherit;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        background-color: #333;
+        color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .toast.show {
+        opacity: 1;
+    }
+
+    .toast.success {
+        background-color: var(--success-color);
+    }
+
+    .toast.error {
+        background-color: var(--error-color);
+    }
+
+    .toast.warning {
+        background-color: var(--warning-color);
+    }
+
+    .toast.info {
+        background-color: var(--info-color);
+    }
+
+    .chart-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--box-shadow);
+        height: 300px;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .search-box input {
+        flex: 1;
+    }
+
+    .plan-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-left: 0.5rem;
+    }
+
+    .plan-basic {
+        background-color: var(--info-color);
+        color: white;
+    }
+
+    .plan-premium {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .plan-trial {
+        background-color: var(--warning-color);
+        color: white;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .status-active {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .status-inactive {
+        background-color: var(--error-color);
+        color: white;
+    }
+
+    .status-pending {
+        background-color: var(--warning-color);
+        color: white;
+    }
+
+    .permission-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        background-color: var(--primary-light);
+        color: var(--primary-dark);
+        margin-right: 0.5rem;
+    }
+
+    .access-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .access-admin {
+        background-color: var(--error-color);
+        color: white;
+    }
+
+    .access-seller {
+        background-color: var(--info-color);
+        color: white;
+    }
+
+    .trial-warning {
+        background-color: #ffeaa7;
+        border-left: 4px solid var(--warning-color);
+        padding: 1rem;
+        margin: 1.5rem 0;
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .tabs {
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            justify-content: center;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-card {
+            height: 250px;
+        }
+        
+        .search-box {
+            flex-direction: column;
+        }
+    }
+</style>
+
+</head> <body class="theme-gray"> 
+<!-- Tela de Login -->
+ <div class="login-container" id="login-container"> 
+ <div class="login-box"> <div class="login-logo"> 
+ <h1><i class="fas fa-tools"></i> System Control Pro</h1>
+ <p>Sistema de Gestão Multiempresas</p> </div>
+ 
+         <form class="login-form" id="login-form">
+            <div class="form-group">
+                <label for="empresa">Empresa:</label>
+                <select id="empresa" required>
+                    <option value="">Selecione a empresa</option>
+                    <!-- As empresas serão carregadas via JavaScript -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" required placeholder="Digite seu usuário">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" required placeholder="Digite sua senha">
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="remember-me"> Lembrar-me
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+        </form>
+        
+        <div style="margin-top: 1.5rem; color: var(--text-light); font-size: 0.9rem;"></div>
+    </div>
+</div>
+
+<!-- Sistema Principal (inicialmente oculto) -->
+<div class="app-container" id="app-container">
+    <header>
+        <div class="logo">
+            <h1><i class="fas fa-tools"></i> System Control Pro</h1>
+            <p id="empresa-name">Sistema de Gestão de Varejo</p>
+        </div>
+        <div class="header-controls">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span id="current-user">Usuário</span>
+                <span id="user-role" class="access-badge access-admin">Admin</span>
+            </div>
+            <button class="btn btn-secondary" id="theme-toggle">
+                <i class="fas fa-palette"></i> Tema
+            </button>
+            <button class="btn btn-secondary" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="dashboard">
+                <i class="fas fa-home"></i> Dashboard
+            </div>
+            <div class="tab" data-tab="products">
+                <i class="fas fa-box"></i> Produtos
+            </div>
+            <div class="tab" data-tab="customers">
+                <i class="fas fa-users"></i> Clientes
+            </div>
+            <div class="tab" data-tab="quotes">
+                <i class="fas fa-file-invoice-dollar"></i> Orçamentos
+            </div>
+            <div class="tab" data-tab="orders">
+                <i class="fas fa-shopping-cart"></i> Pedidos
+            </div>
+            <div class="tab" data-tab="reports">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </div>
+            <div class="tab admin-only" data-tab="admin">
+                <i class="fas fa-lock"></i> Administração
+            </div>
+            <div class="tab admin-only" data-tab="users">
+                <i class="fas fa-user-cog"></i> Usuários
+            </div>
+        </div>
+
+        <!-- Conteúdo das abas será carregado dinamicamente via JavaScript -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="products" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="customers" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="quotes" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="orders" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="reports" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="admin" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+
+        <div id="users" class="tab-content">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal genérico para formulários -->
+<div id="form-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="SystemControlPro.closeModal('form-modal')">&times;</span>
+        <h2 id="modal-title"><i class="fas fa-plus"></i> Adicionar Item</h2>
+        <div id="modal-body">
+            <!-- Conteúdo do modal será carregado dinamicamente -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação -->
+<div id="confirm-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="SystemControlPro.closeModal('confirm-modal')">&times;</span>
+        <h2><i class="fas fa-exclamation-triangle"></i> Confirmar ação</h2>
+        <p id="confirm-message">Tem certeza que deseja realizar esta ação?</p>
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('confirm-modal')">Cancelar</button>
+            <button class="btn btn-danger" id="confirm-button">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de notificação -->
+<div id="toast" class="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toast-message">Operação realizada com sucesso!</span>
+</div>
+
+<script>
+    // Estrutura de dados para o sistema
+    const SystemControlPro = {
+        // Admin principal do sistema
+        admin: {
+            username: 'admin',
+            password: 'laempresaess2023',
+            name: 'Administrador Principal',
+            role: 'system_admin'
+        },
+        
+        // Planos disponíveis
+        plans: {
+            basic: {
+                name: 'Básico',
+                maxUsers: 5,
+                maxProducts: 300,
+                price: 199.90
+            },
+            premium: {
+                name: 'Premium',
+                maxUsers: Infinity,
+                maxProducts: Infinity,
+                price: 499.90
+            }
+        },
+        
+        // --- Sessão persistente ---
+        SESSION_KEY: 'scp_session',
+        SESSION_TTL_MS: 12 * 60 * 60 * 1000, // 12h padrão
+        SESSION_TTL_LONG_MS: 30 * 24 * 60 * 60 * 1000, // 30 dias
+        inactivityTimer: null,
+        heartbeatInterval: null,
+
+        saveSession(user, empresa, remember = false) {
+            const data = {
+                username: user.username,
+                role: user.role,
+                empresaId: empresa ? empresa.id : null,
+                ts: Date.now(),
+                remember: remember
+            };
+            localStorage.setItem(this.SESSION_KEY, JSON.stringify(data));
+        },
+
+        loadSession() {
+            const raw = localStorage.getItem(this.SESSION_KEY);
+            if (!raw) return null;
+            try {
+                const s = JSON.parse(raw);
+                const ttl = s.remember ? this.SESSION_TTL_LONG_MS : this.SESSION_TTL_MS;
+                if (!s.ts || (Date.now() - s.ts) > ttl) {
+                    localStorage.removeItem(this.SESSION_KEY);
+                    return null;
+                }
+                return s;
+            } catch {
+                localStorage.removeItem(this.SESSION_KEY);
+                return null;
+            }
+        },
+
+        refreshSessionTTL() {
+            const s = this.loadSession();
+            if (!s) return;
+            s.ts = Date.now();
+            localStorage.setItem(this.SESSION_KEY, JSON.stringify(s));
+        },
+
+        clearSession() {
+            localStorage.removeItem(this.SESSION_KEY);
+        },
+
+        tryAutoLogin() {
+            const s = this.loadSession();
+            if (!s) return false;
+
+            if (s.role === 'system_admin') {
+                this.currentUser = { ...this.admin };
+                this.currentEmpresa = null;
+                this.showApp();
+                return true;
+            }
+
+            // login por empresa
+            const emp = this.empresas.find(e => e.id == s.empresaId);
+            if (!emp) { this.clearSession(); return false; }
+
+            const users = this.usuarios[s.empresaId] || [];
+            const u = users.find(x => x.username === s.username);
+            if (!u) { this.clearSession(); return false; }
+
+            this.currentUser = u;
+            this.currentEmpresa = emp;
+            this.showApp();
+            return true;
+        },
+
+        setupInactivityTimer() {
+            // Limpar timer existente
+            if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+            
+            // Configurar novo timer (15 minutos)
+            this.inactivityTimer = setTimeout(() => {
+                this.handleLogout();
+                this.showToast('Sessão expirada por inatividade', 'warning');
+            }, 15 * 60 * 1000);
+        },
+
+        resetInactivityTimer() {
+            this.setupInactivityTimer();
+        },
+
+        setupHeartbeat() {
+            // Limpar intervalo existente
+            if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+            
+            // Configurar novo intervalo (5 minutos)
+            this.heartbeatInterval = setInterval(() => {
+                if (this.currentUser) {
+                    this.refreshSessionTTL();
+                }
+            }, 5 * 60 * 1000);
+        },
+
+        // Empresas cadastradas
+        empresas: [],
+        
+        // Usuários do sistema (por empresa)
+        usuarios: {},
+        
+        // Produtos (por empresa)
+        produtos: {},
+        
+        // Clientes (por empresa)
+        clientes: {},
+        
+        // Orçamentos (por empresa)
+        orcamentos: {},
+        
+        // Pedidos (por empresa)
+        pedidos: {},
+        
+        // Configurações (por empresa)
+        configuracoes: {},
+        
+        // Estado atual
+        currentUser: null,
+        currentEmpresa: null,
+        currentTab: 'dashboard',
+        currentEditingCompanyId: null,
+        
+        // Inicializar o sistema
+        init: function() {
+            this.loadFromStorage();
+            this.setupEventListeners();
+            this.loadEmpresasDropdown();
+            this.checkExpiredTrials();
+            
+            // Tenta auto-login primeiro
+            if (!this.tryAutoLogin()) {
+                // Se não conseguiu, mostra tela de login
+                document.getElementById('login-container').style.display = 'flex';
+                document.getElementById('app-container').style.display = 'none';
+            }
+        },
+        
+        // Carregar dados do localStorage
+        loadFromStorage: function() {
+            const savedData = localStorage.getItem('systemControlPro_data');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                this.empresas = data.empresas || [];
+                this.usuarios = data.usuarios || {};
+                this.produtos = data.produtos || {};
+                this.clientes = data.clientes || {};
+                this.orcamentos = data.orcamentos || {};
+                this.pedidos = data.pedidos || {};
+                this.configuracoes = data.configuracoes || {};
+            }
+            
+            // Se não há empresas, criar uma padrão para demonstração
+            if (this.empresas.length === 0) {
+                this.createDemoData();
+            }
+        },
+        
+        // Criar dados de demonstração
+        createDemoData: function() {
+            // Criar empresa de demonstração
+            const demoEmpresa = {
+                id: 1,
+                nome: 'Empresa Demonstração',
+                cnpj: '00.000.000/0001-00',
+                endereco: 'Rua Exemplo, 123',
+                telefone: '(11) 9999-9999',
+                email: 'contato@empresademo.com.br',
+                plano: 'premium',
+                dataCriacao: new Date().toISOString(),
+                status: 'active',
+                codigo: '0001',
+                logo: null
+            };
+            
+            this.empresas.push(demoEmpresa);
+            
+            // Adicionar usuários padrão para a empresa
+            this.usuarios[1] = [
+                {
+                    id: 1,
+                    username: 'admin',
+                    password: 'senha123',
+                    name: 'Administrador da Empresa',
+                    role: 'admin',
+                    email: 'admin@empresa.com',
+                    permissions: ['all'],
+                    status: 'active'
+                },
+                {
+                    id: 2,
+                    username: 'vendedor',
+                    password: 'senha123',
+                    name: 'Vendedor Exemplo',
+                    role: 'seller',
+                    email: 'vendedor@empresa.com',
+                    permissions: ['sales', 'customers'],
+                    status: 'active'
+                }
+            ];
+            
+            // Adicionar produtos de exemplo
+            this.produtos[1] = [
+                {
+                    id: 1,
+                    nome: 'Furadeira Impacto 500W',
+                    categoria: 'Ferramentas Elétricas',
+                    preco: 299.90,
+                    custo: 180.00,
+                    estoque: 15,
+                    estoqueMinimo: 5,
+                    codigo: 'FRD500',
+                    status: 'active',
+                    image: null
+                },
+                {
+                    id: 2,
+                    nome: 'Kit de Chaves de Fenda',
+                    categoria: 'Ferramentas Manuais',
+                    preco: 89.90,
+                    custo: 45.00,
+                    estoque: 8,
+                    estoqueMinimo: 10,
+                    codigo: 'KITCF',
+                    status: 'active',
+                    image: null
+                },
+                {
+                    id: 3,
+                    nome: 'Serra Circular 1800W',
+                    categoria: 'Ferramentas Elétricas',
+                    preco: 459.90,
+                    custo: 280.00,
+                    estoque: 3,
+                    estoqueMinimo: 3,
+                    codigo: 'SRC1800',
+                    status: 'active',
+                    image: null
+                }
+            ];
+            
+            // Adicionar clientes de exemplo
+            this.clientes[1] = [
+                {
+                    id: 1,
+                    nome: 'João Silva',
+                    email: 'joao@email.com',
+                    telefone: '(11) 99999-9999',
+                    cpfCnpj: '123.456.789-00',
+                    endereco: 'Rua das Flores, 123 - São Paulo/SP',
+                    dataCadastro: new Date().toISOString(),
+                    status: 'active'
+                },
+                {
+                    id: 2,
+                    nome: 'Maria Santos',
+                    email: 'maria@email.com',
+                    telefone: '(11) 98888-8888',
+                    cpfCnpj: '987.654.321-00',
+                    endereco: 'Av. Paulista, 1000 - São Paulo/SP',
+                    dataCadastro: new Date().toISOString(),
+                    status: 'active'
+                }
+            ];
+            
+            // Adicionar orçamentos de exemplo
+            this.orcamentos[1] = [
+                {
+                    id: 1,
+                    clienteId: 1,
+                    clienteNome: 'João Silva',
+                    data: new Date().toISOString(),
+                    validoAte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    items: [
+                        { produtoId: 1, quantidade: 1, preco: 299.90, total: 299.90 },
+                        { produtoId: 2, quantidade: 2, preco: 89.90, total: 179.80 }
+                    ],
+                    total: 479.70,
+                    status: 'pending'
+                }
+            ];
+            
+            // Adicionar pedidos de exemplo
+            this.pedidos[1] = [
+                {
+                    id: 1,
+                    clienteId: 2,
+                    clienteNome: 'Maria Santos',
+                    data: new Date().toISOString(),
+                    items: [
+                        { produtoId: 3, quantidade: 1, preco: 459.90, total: 459.90 }
+                    ],
+                    total: 459.90,
+                    status: 'delivered'
+                }
+            ];
+            
+            // Configurações padrão
+            this.configuracoes[1] = {
+                empresaId: 1,
+                metaMensal: 100000,
+                comissaoPercentual: 3,
+                metasPorUsuario: {},
+                comissaoPorUsuario: {}
+            };
+            
+            this.saveToStorage();
+        },
+        
+        // Salvar dados no localStorage
+        saveToStorage: function() {
+            const data = {
+                empresas: this.empresas,
+                usuarios: this.usuarios,
+                produtos: this.produtos,
+                clientes: this.clientes,
+                orcamentos: this.orcamentos,
+                pedidos: this.pedidos,
+                configuracoes: this.configuracoes
+            };
+            localStorage.setItem('systemControlPro_data', JSON.stringify(data));
+        },
+        
+        // Configurar event listeners
+        setupEventListeners: function() {
+            // Login form
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleLogin();
+            });
+            
+            // Logout button
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                this.handleLogout();
+            });
+            
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                this.toggleTheme();
+            });
+            
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    this.switchTab(tabId);
+                });
+            });
+
+            // Eventos de atividade para resetar timer de inatividade
+            const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+            activityEvents.forEach(event => {
+                document.addEventListener(event, () => {
+                    if (this.currentUser) {
+                        this.resetInactivityTimer();
+                    }
+                });
+            });
+        },
+        
+        // Carregar dropdown de empresas
+        loadEmpresasDropdown: function() {
+            const select = document.getElementById('empresa');
+            select.innerHTML = '<option value="">Selecione a empresa</option>';
+            
+            this.empresas.forEach(empresa => {
+                // Verificar se a empresa está ativa ou em trial válido
+                if (empresa.status === 'active' || 
+                    (empresa.status === 'trial' && this.isTrialValid(empresa.dataCriacao))) {
+                    const option = document.createElement('option');
+                    option.value = empresa.id;
+                    // MOSTRA SÓ O CÓDIGO, NÃO O NOME
+                    const codigo = String(empresa.id).padStart(4,'0');
+                    option.textContent = `Empresa ${codigo}`;
+                    if (empresa.status === 'trial') {
+                        option.textContent += ' (Trial)';
+                    }
+                    select.appendChild(option);
+                }
+            });
+            
+            // Adicionar opção para admin do sistema
+            const option = document.createElement('option');
+            option.value = 'system_admin';
+            option.textContent = 'Administração do Sistema';
+            select.appendChild(option);
+        },
+        
+        // Verificar se o trial ainda é válido
+        isTrialValid: function(dataCriacao) {
+            const criacaoDate = new Date(dataCriacao);
+            const hoje = new Date();
+            const diffTime = Math.abs(hoje - criacaoDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 7;
+        },
+        
+        // Verificar trials expirados
+        checkExpiredTrials: function() {
+            this.empresas.forEach(empresa => {
+                if (empresa.status === 'trial' && !this.isTrialValid(empresa.dataCriacao)) {
+                    empresa.status = 'expired';
+                }
+            });
+            this.saveToStorage();
+        },
+        
+        // Manipular login
+        handleLogin: function() {
+            // Verificar trials expirados antes do login
+            this.checkExpiredTrials();
+            
+            const empresaId = document.getElementById('empresa').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember-me').checked;
+            
+            // Verificar se é login do admin do sistema
+            if (empresaId === 'system_admin') {
+                if (username === this.admin.username && password === this.admin.password) {
+                    this.currentUser = this.admin;
+                    this.currentEmpresa = null;
+                    this.saveSession(this.admin, null, remember);
+                    this.showApp();
+                    this.showToast('Login como administrador do sistema realizado com sucesso!', 'success');
+                    return;
+                } else {
+                    this.showToast('Credenciais de administração inválidas', 'error');
+                    return;
+                }
+            }
+            
+            // Verificar se é login de empresa
+            if (!empresaId) {
+                this.showToast('Selecione uma empresa', 'error');
+                return;
+            }
+            
+            const empresa = this.empresas.find(e => e.id == empresaId);
+            
+            if (!empresa) {
+                this.showToast('Empresa não encontrada', 'error');
+                return;
+            }
+            
+            // Verificar se a empresa está ativa
+            if (empresa.status !== 'active' && 
+                !(empresa.status === 'trial' && this.isTrialValid(empresa.dataCriacao))) {
+                this.showToast('Esta empresa não está ativa ou o trial expirou', 'error');
+                return;
+            }
+            
+            const usuariosEmpresa = this.usuarios[empresaId] || [];
+            const user = usuariosEmpresa.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                this.currentUser = user;
+                this.currentEmpresa = empresa;
+                this.saveSession(user, empresa, remember);
+                this.showApp();
+                this.showToast('Login realizado com sucesso!', 'success');
+            } else {
+                this.showToast('Usuário ou senha inválidos', 'error');
+            }
+        },
+        
+        // Mostrar aplicação
+        showApp: function() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            
+            // Atualizar interface com informações do usuário
+            document.getElementById('current-user').textContent = this.currentUser.name;
+            
+            // Atualizar papel do usuário
+            const roleBadge = document.getElementById('user-role');
+            if (this.currentUser.role === 'system_admin') {
+                roleBadge.textContent = 'System Admin';
+                roleBadge.className = 'access-badge access-admin';
+            } else if (this.currentUser.role === 'admin') {
+                roleBadge.textContent = 'Admin';
+                roleBadge.className = 'access-badge access-admin';
+            } else {
+                roleBadge.textContent = 'Vendedor';
+                roleBadge.className = 'access-badge access-seller';
+            }
+            
+            // Atualizar nome da empresa se for usuário de empresa
+            if (this.currentEmpresa) {
+                document.getElementById('empresa-name').textContent = `${this.currentEmpresa.nome} (${this.currentEmpresa.codigo})`;
+                
+                // Mostrar aviso se for trial
+                if (this.currentEmpresa.status === 'trial') {
+                    this.showTrialWarning();
+                }
+            } else {
+                document.getElementById('empresa-name').textContent = 'Administração do Sistema';
+            }
+            
+            // Configurar permissões
+            this.setupUserPermissions();
+            
+            // Iniciar timers de sessão
+            this.setupInactivityTimer();
+            this.setupHeartbeat();
+            
+            // Carregar a aba atual
+            this.loadTabContent(this.currentTab);
+        },
+        
+        // Mostrar aviso de trial
+        showTrialWarning: function() {
+            const criacaoDate = new Date(this.currentEmpresa.dataCriacao);
+            const hoje = new Date();
+            const diffTime = Math.abs(hoje - criacaoDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diasRestantes = 7 - diffDays;
+            
+            // Criar elemento de aviso
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'trial-warning';
+            warningDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle" style="color: var(--warning-color); font-size: 1.5rem;"></i>
+                <div>
+                    <strong>Conta em modo Trial</strong>
+                    <p>Você tem ${diasRestantes} dias restantes de trial. Entre em contato com nosso suporte para ativar sua conta.</p>
+                </div>
+            `;
+            
+            // Inserir após as abas
+            const container = document.querySelector('.container');
+            container.insertBefore(warningDiv, container.querySelector('.tab-content'));
+        },
+        
+        // Configurar permissões do usuário
+        setupUserPermissions: function() {
+            const isAdmin = this.currentUser.role === 'admin' || this.currentUser.role === 'system_admin';
+            const isSystemAdmin = this.currentUser.role === 'system_admin';
+            
+            // Esconder/mostrar abas baseado nas permissões
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = isAdmin ? 'flex' : 'none';
+            });
+            
+            // Se for system admin, mostrar apenas a aba de admin
+            if (isSystemAdmin) {
+                document.querySelectorAll('.tab:not([data-tab="admin"])').forEach(tab => {
+                    tab.style.display = 'none';
+                });
+                this.switchTab('admin');
+            }
+        },
+        
+        // Trocar de aba
+        switchTab: function(tabId) {
+            this.currentTab = tabId;
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            
+            // Carregar o conteúdo da aba
+            this.loadTabContent(tabId);
+        },
+        
+        // Carregar conteúdo da aba
+        loadTabContent: function(tabId) {
+            switch(tabId) {
+                case 'dashboard':
+                    this.loadDashboard();
+                    break;
+                case 'products':
+                    this.loadProducts();
+                    break;
+                case 'customers':
+                    this.loadCustomers();
+                    break;
+                case 'quotes':
+                    this.loadQuotes();
+                    break;
+                case 'orders':
+                    this.loadOrders();
+                    break;
+                case 'reports':
+                    this.loadReports();
+                    break;
+                case 'admin':
+                    this.loadAdmin();
+                    break;
+                case 'users':
+                    this.loadUsers();
+                    break;
+            }
+        },
+        
+        // Carregar dashboard
+        loadDashboard: function() {
+            const dashboard = document.getElementById('dashboard');
+            
+            if (this.currentUser.role === 'system_admin') {
+                dashboard.innerHTML = `
+                    <div class="admin-section">
+                        <h3><i class="fas fa-lock"></i> Área do Administrador do Sistema</h3>
+                        <p>Esta área permite gerenciar todas as empresas do sistema.</p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3><i class="fas fa-building"></i> Empresas Cadastradas</h3>
+                            <div class="stat-value">${this.empresas.length}</div>
+                            <div>${this.empresas.filter(e => e.status === 'active').length} ativas</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-users"></i> Total de Usuários</h3>
+                            <div class="stat-value">${Object.values(this.usuarios).reduce((acc, users) => acc + users.length, 0)}</div>
+                            <div>Em todas as empresas</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-shopping-cart"></i> Total de Pedidos</h3>
+                            <div class="stat-value">${Object.values(this.pedidos).reduce((acc, orders) => acc + orders.length, 0)}</div>
+                            <div>Em todas as empresas</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Total de Orçamentos</h3>
+                            <div class="stat-value">${Object.values(this.orcamentos).reduce((acc, quotes) => acc + quotes.length, 0)}</div>
+                            <div>Em todas as empresas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2><i class="fas fa-building"></i> Empresas Cadastradas</h2>
+                        <button class="btn btn-primary" onclick="SystemControlPro.showAddCompanyModal()">
+                            <i class="fas fa-plus"></i> Adicionar Empresa
+                        </button>
+                        
+                        <table style="margin-top: 1rem;">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Plano</th>
+                                    <th>Status</th>
+                                    <th>Data de Criação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.empresas.map(empresa => `
+                                    <tr>
+                                        <td>${empresa.nome}</td>
+                                        <td>
+                                            ${empresa.plano === 'basic' ? 
+                                                '<span class="plan-badge plan-basic">Básico</span>' : 
+                                                '<span class="plan-badge plan-premium">Premium</span>'}
+                                            ${empresa.status === 'trial' ? '<span class="plan-badge plan-trial">Trial</span>' : ''}
+                                        </td>
+                                        <td>
+                                            ${empresa.status === 'active' ? 
+                                                '<span class="status-badge status-active">Ativa</span>' : 
+                                              empresa.status === 'trial' ? 
+                                                '<span class="status-badge status-pending">Trial</span>' : 
+                                                '<span class="status-badge status-inactive">Inativa</span>'}
+                                        </td>
+                                        <td>${new Date(empresa.dataCriacao).toLocaleDateString()}</td>
+                                        <td class="action-buttons">
+                                            <button class="btn btn-secondary" onclick="SystemControlPro.editCompany(${empresa.id})"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-danger" onclick="SystemControlPro.deleteCompany(${empresa.id})"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                // Dashboard para empresas
+                const empresaId = this.currentEmpresa.id;
+                const produtos = this.produtos[empresaId] || [];
+                const clientes = this.clientes[empresaId] || [];
+                const orcamentos = this.orcamentos[empresaId] || [];
+                const pedidos = this.pedidos[empresaId] || [];
+                const config = this.configuracoes[empresaId] || {};
+                
+                // Calcular totais
+                const totalVendas = pedidos.reduce((acc, pedido) => acc + pedido.total, 0);
+                const totalOrcamentos = orcamentos.reduce((acc, orcamento) => acc + orcamento.total, 0);
+                
+                // Calcular meta específica do usuário ou usar a geral
+                let metaMensal = config.metaMensal || 0;
+                let comissaoPercentual = config.comissaoPercentual || 0;
+                
+                if (this.currentUser.role === 'seller' && config.metasPorUsuario && config.metasPorUsuario[this.currentUser.id]) {
+                    metaMensal = config.metasPorUsuario[this.currentUser.id];
+                }
+                
+                if (this.currentUser.role === 'seller' && config.comissaoPorUsuario && config.comissaoPorUsuario[this.currentUser.id]) {
+                    comissaoPercentual = config.comissaoPorUsuario[this.currentUser.id];
+                }
+                
+                const metaPercentual = metaMensal ? (totalVendas / metaMensal) * 100 : 0;
+                const comissao = comissaoPercentual ? (totalVendas * comissaoPercentual) / 100 : 0;
+                
+                // Ordenar orçamentos pendentes por valor (decrescente)
+                const orcamentosPendentes = orcamentos
+                    .filter(o => o.status === 'pending')
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 5); // Top 5
+                
+                dashboard.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3><i class="fas fa-bullseye"></i> Meta do Mês</h3>
+                            <div class="stat-value">R$ ${metaMensal.toFixed(2)}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${Math.min(metaPercentual, 100)}%"></div>
+                            </div>
+                            <div>${Math.min(metaPercentual, 100).toFixed(1)}% atingido</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-hand-holding-usd"></i> Vendas</h3>
+                            <div class="stat-value">R$ ${totalVendas.toFixed(2)}</div>
+                            <div>${pedidos.length} pedidos realizados</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-percentage"></i> Comissão</h3>
+                            <div class="stat-value">R$ ${comissao.toFixed(2)}</div>
+                            <div>a pagar para vendedores</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><i class="fas fa-boxes"></i> Produtos</h3>
+                            <div class="stat-value">${produtos.length}</div>
+                            <div>${produtos.filter(p => p.estoque <= p.estoqueMinimo).length} com estoque baixo</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Alertas Importantes</h2>
+                        <ul>
+                            ${produtos.filter(p => p.estoque <= p.estoqueMinimo).length > 0 ? 
+                                `<li>${produtos.filter(p => p.estoque <= p.estoqueMinimo).length} produtos com estoque abaixo do mínimo</li>` : ''}
+                            ${orcamentos.filter(o => new Date(o.validoAte) < new Date() && o.status === 'pending').length > 0 ? 
+                                `<li>${orcamentos.filter(o => new Date(o.validoAte) < new Date() && o.status === 'pending').length} orçamentos vencidos</li>` : ''}
+                            ${pedidos.filter(p => p.status === 'pending').length > 0 ? 
+                                `<li>${pedidos.filter(p => p.status === 'pending').length} pedidos com pagamento pendente</li>` : ''}
+                            ${produtos.filter(p => p.estoque <= p.estoqueMinimo).length === 0 && 
+                              orcamentos.filter(o => new Date(o.validoAte) < new Date() && o.status === 'pending').length === 0 && 
+                              pedidos.filter(p => p.status === 'pending').length === 0 ? 
+                                '<li>Nenhum alerta importante no momento</li>' : ''}
+                        </ul>
+                    </div>
+
+                    ${orcamentosPendentes.length > 0 ? `
+                    <div class="card">
+                        <h2><i class="fas fa-file-invoice-dollar"></i> Orçamentos Pendentes (Maiores Valores)</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Válido até</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orcamentosPendentes.map(o => `
+                                    <tr>
+                                        <td>${o.clienteNome}</td>
+                                        <td>R$ ${o.total.toFixed(2)}</td>
+                                        <td>${new Date(o.validoAte).toLocaleDateString()}</td>
+                                        <td class="action-buttons">
+                                            <button class="btn btn-secondary" onclick="SystemControlPro.showQuoteForm(${o.id})"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-success" onclick="SystemControlPro.setQuoteStatus(${o.id}, 'approved')"><i class="fas fa-check"></i></button>
+                                            <button class="btn btn-primary" onclick="SystemControlPro.convertQuoteToOrder(${o.id})"><i class="fas fa-shopping-cart"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        ${orcamentos.filter(o => o.status === 'pending').length > 5 ? `
+                            <div style="margin-top: 1rem; text-align: center;">
+                                <button class="btn btn-secondary" onclick="SystemControlPro.switchTab('quotes')">
+                                    Ver todos os orçamentos
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                `;
+            }
+        },
+        
+        // Mostrar modal para adicionar empresa
+        showAddCompanyModal: function() {
+            this.currentEditingCompanyId = null;
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            
+            modalTitle.innerHTML = '<i class="fas fa-plus"></i> Adicionar Empresa';
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label for="company-name">Nome da Empresa:</label>
+                    <input type="text" id="company-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-cnpj">CNPJ:</label>
+                    <input type="text" id="company-cnpj" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-email">E-mail:</label>
+                    <input type="email" id="company-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-phone">Telefone:</label>
+                    <input type="text" id="company-phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-address">Endereço:</label>
+                    <input type="text" id="company-address" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-plan">Plano:</label>
+                    <select id="company-plan" required>
+                        <option value="basic">Básico (até 5 usuários e 300 produtos)</option>
+                        <option value="premium">Premium (ilimitado)</option>
+                        <option value="trial">Trial (7 dias gratuitos)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="admin-username">Usuário Admin:</label>
+                    <input type="text" id="admin-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-email">E-mail Admin:</label>
+                    <input type="email" id="admin-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">Senha Admin:</label>
+                    <input type="password" id="admin-password" required>
+                </div>
+                <button class="btn btn-primary" onclick="SystemControlPro.saveCompany()">
+                    <i class="fas fa-save"></i> Salvar Empresa
+                </button>
+            `;
+            
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+        
+        // Mostrar modal para editar empresa
+        showEditCompanyModal: function(companyId) {
+            this.currentEditingCompanyId = companyId;
+            const empresa = this.empresas.find(e => e.id === companyId);
+            
+            if (!empresa) {
+                this.showToast('Empresa não encontrada', 'error');
+                return;
+            }
+            
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            
+            modalTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Empresa';
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label for="company-name">Nome da Empresa:</label>
+                    <input type="text" id="company-name" value="${empresa.nome}" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-cnpj">CNPJ:</label>
+                    <input type="text" id="company-cnpj" value="${empresa.cnpj}" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-email">E-mail:</label>
+                    <input type="email" id="company-email" value="${empresa.email}" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-phone">Telefone:</label>
+                    <input type="text" id="company-phone" value="${empresa.telefone}" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-address">Endereço:</label>
+                    <input type="text" id="company-address" value="${empresa.endereco}" required>
+                </div>
+                <div class="form-group">
+                    <label for="company-plan">Plano:</label>
+                    <select id="company-plan" required>
+                        <option value="basic" ${empresa.plano === 'basic' ? 'selected' : ''}>Básico (até 5 usuários e 300 produtos)</option>
+                        <option value="premium" ${empresa.plano === 'premium' ? 'selected' : ''}>Premium (ilimitado)</option>
+                        <option value="trial" ${empresa.plano === 'trial' ? 'selected' : ''}>Trial (7 dias gratuitos)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="company-status">Status:</label>
+                    <select id="company-status" required>
+                        <option value="active" ${empresa.status === 'active' ? 'selected' : ''}>Ativa</option>
+                        <option value="inactive" ${empresa.status === 'inactive' ? 'selected' : ''}>Inativa</option>
+                        <option value="trial" ${empresa.status === 'trial' ? 'selected' : ''}>Trial</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="SystemControlPro.saveCompany()">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+            `;
+            
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+        
+        // Salvar empresa
+        saveCompany: function() {
+            const name = document.getElementById('company-name').value;
+            const cnpj = document.getElementById('company-cnpj').value;
+            const email = document.getElementById('company-email').value;
+            const phone = document.getElementById('company-phone').value;
+            const address = document.getElementById('company-address').value;
+            const plan = document.getElementById('company-plan').value;
+            
+            if (!name || !cnpj || !email || !phone || !address) {
+                this.showToast('Preencha todos os campos', 'error');
+                return;
+            }
+            
+            if (this.currentEditingCompanyId) {
+                // Modo edição
+                const empresaIndex = this.empresas.findIndex(e => e.id === this.currentEditingCompanyId);
+                if (empresaIndex === -1) {
+                    this.showToast('Empresa não encontrada', 'error');
+                    return;
+                }
+                
+                const status = document.getElementById('company-status').value;
+                
+                this.empresas[empresaIndex] = {
+                    ...this.empresas[empresaIndex],
+                    nome: name,
+                    cnpj: cnpj,
+                    email: email,
+                    telefone: phone,
+                    endereco: address,
+                    plano: plan,
+                    status: status
+                };
+                
+                this.saveToStorage();
+                this.closeModal('form-modal');
+                this.loadAdmin();
+                this.showToast('Empresa atualizada com sucesso!', 'success');
+            } else {
+                // Modo criação
+                const adminUsername = document.getElementById('admin-username').value;
+                const adminEmail = document.getElementById('admin-email').value;
+                const adminPassword = document.getElementById('admin-password').value;
+                
+                if (!adminUsername || !adminEmail || !adminPassword) {
+                    this.showToast('Preencha todos os campos do administrador', 'error');
+                    return;
+                }
+                
+                const newCompany = {
+                    id: Date.now(),
+                    codigo: String(Date.now()).slice(-4),
+                    nome: name,
+                    cnpj: cnpj,
+                    email: email,
+                    telefone: phone,
+                    endereco: address,
+                    plano: plan,
+                    dataCriacao: new Date().toISOString(),
+                    status: plan === 'trial' ? 'trial' : 'active',
+                    logo: null
+                };
+                
+                this.empresas.push(newCompany);
+                
+                // Criar usuário admin para a nova empresa
+                this.usuarios[newCompany.id] = [
+                    {
+                        id: 1,
+                        username: adminUsername,
+                        password: adminPassword,
+                        name: 'Administrador',
+                        role: 'admin',
+                        email: adminEmail,
+                        permissions: ['all'],
+                        status: 'active'
+                    }
+                ];
+                
+                // Inicializar arrays vazios para os dados da empresa
+                this.produtos[newCompany.id] = [];
+                this.clientes[newCompany.id] = [];
+                this.orcamentos[newCompany.id] = [];
+                this.pedidos[newCompany.id] = [];
+                
+                // Configurações padrão
+                this.configuracoes[newCompany.id] = {
+                    empresaId: newCompany.id,
+                    metaMensal: 100000,
+                    comissaoPercentual: 3,
+                    metasPorUsuario: {},
+                    comissaoPorUsuario: {}
+                };
+                
+                this.saveToStorage();
+                this.closeModal('form-modal');
+                this.loadAdmin();
+                this.showToast('Empresa adicionada com sucesso!', 'success');
+            }
+        },
+        
+        // Editar empresa
+        editCompany: function(companyId) {
+            this.showEditCompanyModal(companyId);
+        },
+        
+        // Excluir empresa
+        deleteCompany: function(companyId) {
+            this.showConfirmModal(
+                'Excluir Empresa',
+                'Tem certeza que deseja excluir esta empresa? Todos os dados serão perdidos.',
+                () => {
+                    this.empresas = this.empresas.filter(e => e.id !== companyId);
+                    delete this.usuarios[companyId];
+                    delete this.produtos[companyId];
+                    delete this.clientes[companyId];
+                    delete this.orcamentos[companyId];
+                    delete this.pedidos[companyId];
+                    delete this.configuracoes[companyId];
+                    this.saveToStorage();
+                    this.loadAdmin();
+                    this.showToast('Empresa excluída com sucesso!', 'success');
+                }
+            );
+        },
+        
+        // Manipular logout
+        handleLogout: function() {
+            // Limpar timers
+            if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+            if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+            
+            this.clearSession();
+            this.currentUser = null;
+            this.currentEmpresa = null;
+            
+            document.getElementById('login-container').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+            
+            document.getElementById('login-form').reset();
+            
+            this.showToast('Logout realizado com sucesso', 'success');
+        },
+        
+        // Alternar tema
+        toggleTheme: function() {
+            const themes = ['theme-gray', 'theme-pink', 'theme-blue', 'theme-green'];
+            const currentTheme = document.body.className;
+            let currentIndex = themes.indexOf(currentTheme);
+            
+            if (currentIndex === -1) currentIndex = 0;
+            
+            const nextIndex = (currentIndex + 1) % themes.length;
+            document.body.className = themes[nextIndex];
+            
+            this.showToast(`Tema alterado para ${themes[nextIndex].replace('theme-', '')}`, 'info');
+        },
+        
+        // Mostrar toast de notificação
+        showToast: function(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const icon = toast.querySelector('i');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast show ' + type;
+            
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                icon.className = 'fas fa-exclamation-triangle';
+            } else if (type === 'info') {
+                icon.className = 'fas fa-info-circle';
+            }
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        },
+        
+        // Fechar modal
+        closeModal: function(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        },
+        
+        // Mostrar modal de confirmação
+        showConfirmModal: function(title, message, callback) {
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-button').onclick = callback;
+            document.getElementById('confirm-modal').style.display = 'flex';
+        },
+        
+        // ===== CLIENTES =====
+        loadCustomers: function () {
+            const empresaId = this.currentEmpresa?.id;
+            if (!empresaId) { document.getElementById('customers').innerHTML = ''; return; }
+
+            const cls = (this.clientes[empresaId] || []);
+            const rows = cls.map(c => `
+                <tr>
+                    <td>${c.nome}</td>
+                    <td>${c.email || '-'}</td>
+                    <td>${c.telefone || '-'}</td>
+                    <td>${new Date(c.dataCadastro).toLocaleDateString()}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="SystemControlPro.showCustomerForm(${c.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" onclick="SystemControlPro.deleteCustomer(${c.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('customers').innerHTML = `
+                <div class="card">
+                    <h2><i class="fas fa-users"></i> Gerenciamento de Clientes</h2>
+                    <div style="display:flex; gap:1rem; flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="SystemControlPro.showCustomerForm()">
+                            <i class="fas fa-plus"></i> Adicionar Cliente
+                        </button>
+                        <input id="cust-search" type="text" placeholder="Buscar cliente..." style="flex:1;min-width:240px">
+                    </div>
+                    <table style="margin-top:1rem">
+                        <thead>
+                            <tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastro</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="cust-tbody">${rows}</tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('cust-search').oninput = (e)=>{
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll('#cust-tbody tr').forEach(r=>{
+                    r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+                });
+            };
+        },
+
+        showCustomerForm: function(id = null) {
+            const empresaId = this.currentEmpresa.id;
+            this.clientes[empresaId] = this.clientes[empresaId] || [];
+            const isEdit = !!id;
+
+            const c = isEdit
+                ? this.clientes[empresaId].find(x => x.id === id)
+                : { id: Date.now(), nome:'', email:'', telefone:'', cpfCnpj:'', endereco:'', dataCadastro:new Date().toISOString(), status:'active' };
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody  = document.getElementById('modal-body');
+            modalTitle.innerHTML = `${isEdit ? '<i class="fas fa-edit"></i> Editar' : '<i class="fas fa-plus"></i> Novo'} Cliente`;
+
+            modalBody.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group"><label>Nome</label><input id="c-nome" value="${c.nome}" required></div>
+                    <div class="form-group"><label>E-mail</label><input id="c-email" value="${c.email || ''}" type="email"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Telefone</label><input id="c-tel" value="${c.telefone || ''}"></div>
+                    <div class="form-group"><label>CPF/CNPJ</label><input id="c-doc" value="${c.cpfCnpj || ''}"></div>
+                </div>
+                <div class="form-group"><label>Endereço</label><input id="c-end" value="${c.endereco || ''}"></div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="c-status">
+                        <option value="active" ${c.status==='active'?'selected':''}>Ativo</option>
+                        <option value="inactive" ${c.status==='inactive'?'selected':''}>Inativo</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem">
+                    <button class="btn btn-primary" onclick="SystemControlPro.saveCustomerFromModal(${isEdit ? c.id : 'null'})"><i class="fas fa-save"></i> Salvar</button>
+                    <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('form-modal')">Cancelar</button>
+                </div>
+            `;
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+
+        saveCustomerFromModal: function(id = null) {
+            const empresaId = this.currentEmpresa.id;
+            this.clientes[empresaId] = this.clientes[empresaId] || [];
+
+            const data = {
+                id: id ?? Date.now(),
+                nome: document.getElementById('c-nome').value.trim(),
+                email: document.getElementById('c-email').value.trim(),
+                telefone: document.getElementById('c-tel').value.trim(),
+                cpfCnpj: document.getElementById('c-doc').value.trim(),
+                endereco: document.getElementById('c-end').value.trim(),
+                dataCadastro: new Date().toISOString(),
+                status: document.getElementById('c-status').value
+            };
+
+            if (!data.nome) { this.showToast('Informe o nome do cliente', 'error'); return; }
+
+            const idx = this.clientes[empresaId].findIndex(c => c.id === data.id);
+            if (idx >= 0) this.clientes[empresaId][idx] = { ...this.clientes[empresaId][idx], ...data };
+            else this.clientes[empresaId].push(data);
+
+            this.saveToStorage();
+            this.closeModal('form-modal');
+            this.loadCustomers();
+            this.showToast('Cliente salvo com sucesso!', 'success');
+        },
+
+        deleteCustomer: function(id){
+            const empresaId = this.currentEmpresa.id;
+            this.showConfirmModal('Excluir cliente', 'Confirma excluir este cliente?', ()=>{
+                this.clientes[empresaId] = (this.clientes[empresaId] || []).filter(c => c.id !== id);
+                this.saveToStorage();
+                this.loadCustomers();
+                this.closeModal('confirm-modal');
+                this.showToast('Cliente excluído.', 'success');
+            });
+        },
+
+        // ===== PRODUTOS =====
+        loadProducts: function () {
+            const empresaId = this.currentEmpresa?.id;
+            if (!empresaId) { document.getElementById('products').innerHTML = ''; return; }
+
+            const list = (this.produtos[empresaId] || []).map(p => `
+                <tr>
+                    <td>${p.nome}</td>
+                    <td>${p.categoria}</td>
+                    <td>R$ ${p.preco.toFixed(2)}</td>
+                    <td>${p.estoque}</td>
+                    <td>${p.status === 'active' ? 'Ativo' : 'Inativo'}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="SystemControlPro.showProductForm(${p.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" onclick="SystemControlPro.deleteProduct(${p.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('products').innerHTML = `
+                <div class="card">
+                    <h2><i class="fas fa-box"></i> Gerenciamento de Produtos</h2>
+                    <div style="display:flex; gap:1rem; flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="SystemControlPro.showProductForm()">
+                            <i class="fas fa-plus"></i> Adicionar Produto
+                        </button>
+                        <input id="prod-search" type="text" placeholder="Buscar produto..." style="flex:1;min-width:240px">
+                    </div>
+                    <table style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prod-tbody">${list}</tbody>
+                    </table>
+                </div>
+            `;
+
+            // filtro simples
+            const search = document.getElementById('prod-search');
+            search.oninput = () => {
+                const q = search.value.toLowerCase();
+                const rows = document.querySelectorAll('#prod-tbody tr');
+                rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none');
+            };
+        },
+
+        // abre modal para criar/editar produto
+        showProductForm: function (id = null) {
+            const empresaId = this.currentEmpresa.id;
+            const isEdit = !!id;
+            const produto = isEdit ? (this.produtos[empresaId] || []).find(p => p.id === id) : {
+                id: Date.now(), nome:'', categoria:'', preco:0, custo:0, estoque:0, estoqueMinimo:0, codigo:'', status:'active', image: null
+            };
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            modalTitle.innerHTML = `${isEdit ? '<i class="fas fa-edit"></i> Editar' : '<i class="fas fa-plus"></i> Novo'} Produto`;
+
+            modalBody.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group"><label>Nome</label>
+                        <input id="p-nome" value="${produto.nome}" required></div>
+                    <div class="form-group"><label>Categoria</label>
+                        <input id="p-cat" value="${produto.categoria}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Preço (R$)</label>
+                        <input id="p-preco" type="number" step="0.01" value="${produto.preco}"></div>
+                    <div class="form-group"><label>Custo (R$)</label>
+                        <input id="p-custo" type="number" step="0.01" value="${produto.custo}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Estoque</label>
+                        <input id="p-estoque" type="number" value="${produto.estoque}"></div>
+                    <div class="form-group"><label>Estoque mínimo</label>
+                        <input id="p-min" type="number" value="${produto.estoqueMinimo}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Código/SKU</label>
+                        <input id="p-codigo" value="${produto.codigo}"></div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="p-status">
+                            <option value="active" ${produto.status==='active'?'selected':''}>Ativo</option>
+                            <option value="inactive" ${produto.status==='inactive'?'selected':''}>Inativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Imagem do Produto</label>
+                    <input type="file" id="p-image" accept="image/*">
+                    ${produto.image ? `
+                        <div style="margin-top: 10px;">
+                            <img src="${produto.image}" alt="Preview" style="max-width: 100px; max-height: 100px;">
+                        </div>
+                    ` : ''}
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem">
+                    <button class="btn btn-primary" onclick="SystemControlPro.saveProductFromModal(${isEdit ? produto.id : 'null'})">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                    <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('form-modal')">Cancelar</button>
+                </div>
+            `;
+
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+
+        saveProductFromModal: function (id = null) {
+            const empresaId = this.currentEmpresa.id;
+            this.produtos[empresaId] = this.produtos[empresaId] || [];
+
+            const data = {
+                id: id ?? Date.now(),
+                nome: document.getElementById('p-nome').value.trim(),
+                categoria: document.getElementById('p-cat').value.trim(),
+                preco: Number(document.getElementById('p-preco').value || 0),
+                custo: Number(document.getElementById('p-custo').value || 0),
+                estoque: parseInt(document.getElementById('p-estoque').value || 0),
+                estoqueMinimo: parseInt(document.getElementById('p-min').value || 0),
+                codigo: document.getElementById('p-codigo').value.trim(),
+                status: document.getElementById('p-status').value,
+                image: null
+            };
+
+            if (!data.nome) { this.showToast('Informe o nome do produto', 'error'); return; }
+            if (data.preco < 0 || data.estoque < 0 || data.estoqueMinimo < 0) {
+                this.showToast('Valores negativos não são permitidos', 'error'); return;
+            }
+
+            // Processar imagem se fornecida
+            const imageInput = document.getElementById('p-image');
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    data.image = e.target.result;
+                    this.finalizeProductSave(data, empresaId, id);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // Manter imagem existente se estiver editando e não fornecer nova
+                if (id) {
+                    const existing = this.produtos[empresaId].find(p => p.id === id);
+                    if (existing) data.image = existing.image;
+                }
+                this.finalizeProductSave(data, empresaId, id);
+            }
+        },
+
+        finalizeProductSave: function(data, empresaId, id) {
+            const idx = this.produtos[empresaId].findIndex(p => p.id === data.id);
+            if (idx >= 0) this.produtos[empresaId][idx] = data; else this.produtos[empresaId].push(data);
+
+            this.saveToStorage();
+            this.closeModal('form-modal');
+            this.loadProducts();
+            this.showToast('Produto salvo com sucesso!', 'success');
+        },
+
+        deleteProduct: function (id) {
+            const empresaId = this.currentEmpresa.id;
+            this.showConfirmModal('Excluir produto', 'Confirma excluir este produto?', () => {
+                this.produtos[empresaId] = (this.produtos[empresaId] || []).filter(p => p.id !== id);
+                this.saveToStorage();
+                this.loadProducts();
+                this.closeModal('confirm-modal');
+                this.showToast('Produto excluído.', 'success');
+            });
+        },
+
+        // ===== ORÇAMENTOS =====
+        loadQuotes: function() {
+            const empresaId = this.currentEmpresa?.id;
+            if (!empresaId) { document.getElementById('quotes').innerHTML=''; return; }
+            const qs = (this.orcamentos[empresaId] || []);
+
+            const rows = qs.map(q => `
+                <tr>
+                    <td>#${q.id}</td>
+                    <td>${q.clienteNome || '-'}</td>
+                    <td>${new Date(q.data).toLocaleDateString()}</td>
+                    <td>R$ ${q.total.toFixed(2)}</td>
+                    <td>
+                        <span class="status-badge ${
+                            q.status==='approved' ? 'status-active' :
+                            q.status==='rejected' ? 'status-inactive' : 'status-pending'
+                        }">${q.status==='approved'?'Aprovado': q.status==='rejected'?'Recusado':'Pendente'}</span>
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="SystemControlPro.showQuoteForm(${q.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-secondary" onclick="SystemControlPro.generateQuotePDF(${q.id})"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn btn-success"   onclick="SystemControlPro.setQuoteStatus(${q.id}, 'approved')"><i class="fas fa-check"></i></button>
+                        <button class="btn btn-danger"    onclick="SystemControlPro.setQuoteStatus(${q.id}, 'rejected')"><i class="fas fa-times"></i></button>
+                        <button class="btn btn-primary"   onclick="SystemControlPro.convertQuoteToOrder(${q.id})"><i class="fas fa-shopping-cart"></i></button>
+                        <button class="btn btn-danger"    onclick="SystemControlPro.deleteQuote(${q.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('quotes').innerHTML = `
+                <div class="card">
+                    <h2><i class="fas fa-file-invoice-dollar"></i> Gerenciamento de Orçamentos</h2>
+                    <div style="display:flex; gap:1rem; flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="SystemControlPro.showQuoteForm()">
+                            <i class="fas fa-plus"></i> Novo Orçamento
+                        </button>
+                        <input id="quote-search" type="text" placeholder="Buscar orçamento..." style="flex:1;min-width:240px">
+                    </div>
+                    <table style="margin-top:1rem">
+                        <thead>
+                            <tr><th>Número</th><th>Cliente</th><th>Data</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="quotes-tbody">${rows}</tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('quote-search').oninput = e=>{
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll('#quotes-tbody tr').forEach(r=>{
+                    r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+                });
+            };
+        },
+
+        showQuoteForm: function (id=null) {
+            const empresaId = this.currentEmpresa.id;
+            this.orcamentos[empresaId] = this.orcamentos[empresaId] || [];
+            const clientes = (this.clientes[empresaId]||[]);
+            const produtos = (this.produtos[empresaId]||[]).filter(p=>p.status==='active');
+
+            if (clientes.length===0){
+                this.showToast('Cadastre um cliente antes de criar o orçamento.', 'warning');
+            }
+
+            const isEdit = !!id;
+            const q = isEdit ? this.orcamentos[empresaId].find(x=>x.id===id) : {
+                id: Date.now(),
+                clienteId: clientes[0]?.id || null,
+                clienteNome: clientes[0]?.nome || '',
+                data: new Date().toISOString(),
+                validoAte: new Date(Date.now()+7*24*60*60*1000).toISOString(),
+                items: [],
+                total: 0,
+                status: 'pending'
+            };
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody  = document.getElementById('modal-body');
+            modalTitle.innerHTML = `${isEdit?'<i class="fas fa-edit"></i> Editar':'<i class="fas fa-plus"></i> Novo'} Orçamento`;
+
+            modalBody.innerHTML = `
+                <div class="form-group"><label>Cliente</label>
+                    <select id="qt-cliente">${clientes.map(c=>`<option value="${c.id}" ${c.id===q.clienteId?'selected':''}>${c.nome}</option>`).join('')}</select>
+                    <div style="margin-top:.5rem"><button class="btn btn-secondary" onclick="SystemControlPro.showCustomerForm()"><i class="fas fa-user-plus"></i> Novo cliente</button></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Validade</label><input id="qt-valid" type="date" value="${q.validoAte.slice(0,10)}"></div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="qt-status">
+                            <option value="pending"  ${q.status==='pending'?'selected':''}>Pendente</option>
+                            <option value="approved" ${q.status==='approved'?'selected':''}>Aprovado</option>
+                            <option value="rejected" ${q.status==='rejected'?'selected':''}>Recusado</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="qt-itens"></div>
+                <button class="btn btn-secondary" onclick="SystemControlPro.addQuoteItemRow()"><i class="fas fa-plus"></i> Adicionar Item</button>
+                <div style="display:flex; gap:1rem; margin-top:1rem">
+                    <button class="btn btn-primary" onclick="SystemControlPro.saveQuoteFromModal(${isEdit?q.id:'null'})"><i class="fas fa-save"></i> Salvar</button>
+                    <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('form-modal')">Cancelar</button>
+                </div>
+            `;
+            document.getElementById('form-modal').style.display = 'flex';
+
+            // preencher itens existentes
+            if (q.items.length===0) this.addQuoteItemRow();
+            else q.items.forEach(it => this.addQuoteItemRow(it));
+
+            // manter rascunho atual na memória do objeto para edição
+            this._editingQuoteId = isEdit ? q.id : null;
+        },
+
+        addQuoteItemRow: function(existing=null) {
+            const empresaId = this.currentEmpresa.id;
+            const produtos = (this.produtos[empresaId]||[]).filter(p=>p.status==='active');
+            const ctn = document.getElementById('qt-itens');
+            const rowId = 'qi-'+Date.now()+Math.random().toString(36).slice(2);
+
+            const linha = document.createElement('div');
+            linha.className = 'form-row';
+            linha.id = rowId;
+            const sel = produtos.map(p=>`<option value="${p.id}" data-preco="${p.preco}" ${existing && p.id===existing.produtoId?'selected':''}>${p.nome}</option>`).join('');
+            const precoIni = existing ? existing.preco : (produtos[0]?.preco || 0);
+            const qtdIni   = existing ? existing.quantidade : 1;
+
+            linha.innerHTML = `
+                <div class="form-group" style="flex:2">
+                    <label>Produto</label>
+                    <select class="qt-prod">${sel}</select>
+                </div>
+                <div class="form-group"><label>Qtd</label><input class="qt-qtd" type="number" min="1" value="${qtdIni}"></div>
+                <div class="form-group"><label>Preço (R$)</label><input class="qt-preco" type="number" step="0.01" value="${precoIni}"></div>
+                <div class="form-group" style="align-self:end">
+                    <button class="btn btn-danger" onclick="document.getElementById('${rowId}').remove()"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            ctn.appendChild(linha);
+
+            // ao trocar produto → atualizar preço
+            linha.querySelector('.qt-prod').onchange = (e)=>{
+                const opt = e.target.selectedOptions[0];
+                linha.querySelector('.qt-preco').value = Number(opt.dataset.preco || 0);
+            };
+        },
+
+        saveQuoteFromModal: function (id=null) {
+            const empresaId = this.currentEmpresa.id;
+            this.orcamentos[empresaId] = this.orcamentos[empresaId] || [];
+
+            const clienteId = parseInt(document.getElementById('qt-cliente').value);
+            const cli = (this.clientes[empresaId]||[]).find(c=>c.id===clienteId);
+            const status = document.getElementById('qt-status').value;
+            const validade = document.getElementById('qt-valid').value;
+
+            const items = [];
+            document.querySelectorAll('#qt-itens .form-row').forEach(r=>{
+                const prodId = parseInt(r.querySelector('.qt-prod').value);
+                const qtd    = parseInt(r.querySelector('.qt-qtd').value || 1);
+                const preco  = Number(r.querySelector('.qt-preco').value || 0);
+                if (prodId && qtd>0 && preco>=0) items.push({produtoId:prodId, quantidade:qtd, preco, total:qtd*preco});
+            });
+            if (items.length===0){ this.showToast('Adicione ao menos 1 item', 'error'); return; }
+
+            const total = items.reduce((a,b)=>a+b.total,0);
+
+            const data = {
+                id: id ?? Date.now(),
+                clienteId, clienteNome: cli?.nome || '',
+                data: new Date().toISOString(),
+                validoAte: new Date(validade || new Date()).toISOString(),
+                items, total, status
+            };
+
+            const idx = this.orcamentos[empresaId].findIndex(x=>x.id===data.id);
+            if (idx>=0) this.orcamentos[empresaId][idx] = data; else this.orcamentos[empresaId].push(data);
+
+            this.saveToStorage();
+            this.closeModal('form-modal');
+            this.loadQuotes();
+            this.showToast('Orçamento salvo!', 'success');
+        },
+
+        deleteQuote: function (id) {
+            const empresaId = this.currentEmpresa.id;
+            this.showConfirmModal('Excluir orçamento','Confirma excluir este orçamento?', ()=>{
+                this.orcamentos[empresaId] = (this.orcamentos[empresaId]||[]).filter(o=>o.id!==id);
+                this.saveToStorage();
+                this.loadQuotes();
+                this.closeModal('confirm-modal');
+                this.showToast('Orçamento excluído.', 'success');
+            });
+        },
+
+        setQuoteStatus: function(id, status){
+            const empresaId = this.currentEmpresa.id;
+            const q = (this.orcamentos[empresaId]||[]).find(o=>o.id===id);
+            if (!q){ this.showToast('Orçamento não encontrado', 'error'); return; }
+            q.status = status;
+            this.saveToStorage();
+            this.loadQuotes();
+        },
+
+        generateQuotePDF: function (quoteId) {
+            const empresa = this.currentEmpresa;
+            const empresaId = empresa.id;
+            const q = (this.orcamentos[empresaId]||[]).find(o=>o.id===quoteId);
+            if (!q){ this.showToast('Orçamento não encontrado', 'error'); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(14);
+            doc.text(`${empresa.nome} - Proposta Comercial`, 14, 16);
+            doc.setFontSize(11);
+            doc.text(`Orçamento: #${q.id}`, 14, 24);
+            doc.text(`Cliente: ${q.clienteNome || '-'}`, 14, 30);
+            doc.text(`Data: ${new Date(q.data).toLocaleDateString()}`, 14, 36);
+            doc.text(`Validade: ${new Date(q.validoAte).toLocaleDateString()}`, 14, 42);
+            doc.text(`Status: ${q.status==='approved'?'Aprovado': q.status==='rejected'?'Recusado':'Pendente'}`, 14, 48);
+
+            const rows = q.items.map(it=>{
+                const prod = (this.produtos[empresaId]||[]).find(p=>p.id===it.produtoId);
+                return [prod?.nome || it.produtoId, String(it.quantidade), `R$ ${it.preco.toFixed(2)}`, `R$ ${it.total.toFixed(2)}`];
+            });
+
+            doc.autoTable({ startY: 56, head: [['Produto','Qtd','Preço','Total']], body: rows });
+            let y = doc.lastAutoTable.finalY + 8;
+            doc.setFont(undefined, 'bold');
+            doc.text(`TOTAL: R$ ${q.total.toFixed(2)}`, 14, y);
+
+            doc.save(`orcamento_${q.id}.pdf`);
+        },
+
+        convertQuoteToOrder: function (quoteId) {
+            const empresaId = this.currentEmpresa.id;
+            const q = (this.orcamentos[empresaId]||[]).find(o=>o.id===quoteId);
+            if (!q){ this.showToast('Orçamento não encontrado', 'error'); return; }
+
+            // checar estoque
+            for (const it of q.items) {
+                const p = (this.produtos[empresaId]||[]).find(x=>x.id===it.produtoId);
+                if (!p || p.estoque < it.quantidade) {
+                    this.showToast(`Estoque insuficiente para ${p?.nome || 'produto'}`, 'error'); return;
+                }
+            }
+
+            // baixar estoque e criar pedido
+            q.items.forEach(it=>{
+                const p = this.produtos[empresaId].find(x=>x.id===it.produtoId);
+                p.estoque -= it.quantidade;
+            });
+
+            this.pedidos[empresaId] = this.pedidos[empresaId] || [];
+            this.pedidos[empresaId].push({
+                id: Date.now(),
+                clienteId: q.clienteId, clienteNome: q.clienteNome,
+                data: new Date().toISOString(),
+                items: q.items,
+                subtotal: q.total, desconto: 0, total: q.total,
+                pagamento: 'A definir',
+                status: 'delivered'
+            });
+
+            q.status = 'approved';
+            this.saveToStorage();
+            this.loadQuotes();
+            this.loadOrders();
+            this.loadProducts();
+            this.loadDashboard();
+            this.showToast('Orçamento convertido em pedido!', 'success');
+        },
+
+        // ===== PEDIDOS =====
+        loadOrders: function () {
+            const empresaId = this.currentEmpresa?.id;
+            if (!empresaId) { document.getElementById('orders').innerHTML = ''; return; }
+
+            const lista = (this.pedidos[empresaId] || []).map(p => `
+                <tr>
+                    <td>#${p.id}</td>
+                    <td>${p.clienteNome || '-'}</td>
+                    <td>${new Date(p.data).toLocaleString()}</td>
+                    <td>R$ ${p.total.toFixed(2)}</td>
+                    <td><span class="status-badge ${p.status==='delivered'?'status-active':'status-pending'}">
+                        ${p.status==='delivered'?'Entregue':'Pendente'}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="SystemControlPro.generateSalePDF(${p.id})"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn btn-danger" onclick="SystemControlPro.cancelOrder(${p.id})"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('orders').innerHTML = `
+                <div class="card">
+                    <h2><i class="fas fa-shopping-cart"></i> Gerenciamento de Pedidos</h2>
+                    <button class="btn btn-primary" onclick="SystemControlPro.showOrderForm()">
+                        <i class="fas fa-plus"></i> Novo Pedido
+                    </button>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <input type="text" id="order-search" placeholder="Buscar pedido...">
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>Número</th><th>Cliente</th><th>Data</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="orders-tbody">${lista}</tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('order-search').oninput = e => {
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll('#orders-tbody tr').forEach(r => {
+                    r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+                });
+            };
+        },
+
+        showOrderForm: function () {
+            const empresaId = this.currentEmpresa.id;
+            const clientes = this.clientes[empresaId] || [];
+            const produtos = (this.produtos[empresaId] || []).filter(p => p.status==='active' && p.estoque>0);
+
+            if (clientes.length===0){
+                this.showToast('Cadastre um cliente antes de criar o pedido.', 'warning');
+                this.showCustomerForm(); // abre já o cadastro
+                return;
+            }
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody  = document.getElementById('modal-body');
+            modalTitle.innerHTML = '<i class="fas fa-plus"></i> Novo Pedido';
+
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <select id="ord-cliente">
+                        ${clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="ord-itens"></div>
+                <button class="btn btn-secondary" onclick="SystemControlPro.addOrderItemRow()">
+                    <i class="fas fa-plus"></i> Adicionar Item
+                </button>
+                <div class="form-row" style="margin-top:1rem">
+                    <div class="form-group"><label>Desconto (R$)</label><input id="ord-desc" type="number" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Forma de Pagamento</label>
+                        <select id="ord-pg"><option>PIX</option><option>Cartão</option><option>Dinheiro</option><option>Boleto</option></select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem">
+                    <button class="btn btn-primary" onclick="SystemControlPro.saveOrderFromModal()"><i class="fas fa-save"></i> Finalizar</button>
+                    <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('form-modal')">Cancelar</button>
+                </div>
+            `;
+
+            // cria 1 linha inicial
+            this.addOrderItemRow();
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+
+        addOrderItemRow: function() {
+            const empresaId = this.currentEmpresa.id;
+            const produtos = (this.produtos[empresaId] || []).filter(p => p.status==='active' && p.estoque>0);
+            const ctn = document.getElementById('ord-itens');
+            const rowId = 'row-'+Date.now();
+
+            const linha = document.createElement('div');
+            linha.className = 'form-row';
+            linha.id = rowId;
+            linha.innerHTML = `
+                <div class="form-group" style="flex:2">
+                    <label>Produto</label>
+                    <select class="ord-prod">
+                        ${produtos.map(p => `<option value="${p.id}" data-preco="${p.preco}">${p.nome} (Estq: ${p.estoque})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group"><label>Qtd</label><input class="ord-qtd" type="number" min="1" value="1"></div>
+                <div class="form-group"><label>Preço (R$)</label><input class="ord-preco" type="number" step="0.01" value="${produtos[0]?.preco || 0}"></div>
+                <div class="form-group" style="align-self:end">
+                    <button class="btn btn-danger" onclick="document.getElementById('${rowId}').remove()"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            ctn.appendChild(linha);
+
+            // ao trocar produto → atualizar preço
+            linha.querySelector('.ord-prod').onchange = (e)=>{
+                const opt = e.target.selectedOptions[0];
+                linha.querySelector('.ord-preco').value = Number(opt.dataset.preco || 0);
+            };
+        },
+
+        saveOrderFromModal: function() {
+            const empresaId = this.currentEmpresa.id;
+            this.pedidos[empresaId] = this.pedidos[empresaId] || [];
+
+            const clienteId = parseInt(document.getElementById('ord-cliente').value);
+            const cli = (this.clientes[empresaId] || []).find(c => c.id === clienteId);
+            const desc = Number(document.getElementById('ord-desc').value || 0);
+            const pg = document.getElementById('ord-pg').value;
+
+            // coletar itens
+            const itens = [];
+            document.querySelectorAll('#ord-itens .form-row').forEach(r=>{
+                const prodId = parseInt(r.querySelector('.ord-prod').value);
+                const qtd = parseInt(r.querySelector('.ord-qtd').value || 1);
+                const preco = Number(r.querySelector('.ord-preco').value || 0);
+                if (prodId && qtd>0 && preco>=0) itens.push({produtoId:prodId, quantidade:qtd, preco, total:qtd*preco});
+            });
+
+            if (itens.length===0) { this.showToast('Adicione ao menos 1 item', 'error'); return; }
+
+            // checar estoque
+            for (const it of itens) {
+                const p = (this.produtos[empresaId] || []).find(x=>x.id===it.produtoId);
+                if (!p || p.estoque < it.quantidade) {
+                    this.showToast(`Estoque insuficiente para ${p?.nome || 'produto'}`, 'error'); return;
+                }
+            }
+
+            const subtotal = itens.reduce((a,b)=>a+b.total,0);
+            const total = Math.max(0, subtotal - desc);
+
+            // baixar estoque
+            itens.forEach(it=>{
+                const p = this.produtos[empresaId].find(x=>x.id===it.produtoId);
+                p.estoque -= it.quantidade;
+            });
+
+            const order = {
+                id: Date.now(),
+                clienteId, clienteNome: cli?.nome || '',
+                data: new Date().toISOString(),
+                items: itens,
+                subtotal, desconto: desc, total,
+                pagamento: pg,
+                status: 'delivered'
+            };
+
+            this.pedidos[empresaId].push(order);
+            this.saveToStorage();
+            this.closeModal('form-modal');
+            this.loadOrders();
+            this.loadDashboard();
+            this.showToast('Pedido finalizado!', 'success');
+        },
+
+        cancelOrder: function(id){
+            const empresaId = this.currentEmpresa.id;
+            const idx = (this.pedidos[empresaId]||[]).findIndex(p=>p.id===id);
+            if (idx<0){ this.showToast('Pedido não encontrado', 'error'); return; }
+            // (opcional) não devolvemos estoque automaticamente aqui
+            this.pedidos[empresaId].splice(idx,1);
+            this.saveToStorage();
+            this.loadOrders();
+            this.showToast('Pedido cancelado.', 'success');
+        },
+
+        // PDF do pedido (recibo/comprovante)
+        generateSalePDF: function (orderId) {
+            const empresa = this.currentEmpresa;
+            const empresaId = empresa.id;
+            const pedido = (this.pedidos[empresaId]||[]).find(p=>p.id===orderId);
+            if (!pedido) { this.showToast('Pedido não encontrado', 'error'); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(14);
+            doc.text(`${empresa.nome} - Comprovante de Venda`, 14, 16);
+            doc.setFontSize(11);
+            doc.text(`Pedido: #${pedido.id}`, 14, 24);
+            doc.text(`Cliente: ${pedido.clienteNome || '-'}`, 14, 30);
+            doc.text(`Data: ${new Date(pedido.data).toLocaleString()}`, 14, 36);
+            doc.text(`Pagamento: ${pedido.pagamento}`, 14, 42);
+
+            const rows = pedido.items.map(it=>{
+                const prod = (this.produtos[empresaId]||[]).find(p=>p.id===it.produtoId);
+                return [
+                    prod?.nome || it.produtoId, 
+                    String(it.quantidade), 
+                    `R$ ${it.preco.toFixed(2)}`, 
+                    `R$ ${it.total.toFixed(2)}`
+                ];
+            });
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Produto','Qtd','Preço','Total']],
+                body: rows
+            });
+
+            let y = doc.lastAutoTable.finalY + 8;
+            doc.text(`Subtotal: R$ ${pedido.subtotal.toFixed(2)}`, 14, y); y+=6;
+            doc.text(`Desconto: R$ ${pedido.desconto.toFixed(2)}`, 14, y); y+=6;
+            doc.setFont(undefined, 'bold');
+            doc.text(`TOTAL: R$ ${pedido.total.toFixed(2)}`, 14, y);
+
+            doc.save(`pedido_${pedido.id}.pdf`);
+        },
+        
+        // ===== RELATÓRIOS =====
+        loadReports: function () {
+            const reportsTab = document.getElementById('reports');
+            reportsTab.innerHTML = `
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> Relatórios</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="report-type">Tipo de Relatório:</label>
+                            <select id="report-type">
+                                <option value="sales">Vendas</option>
+                                <option value="products">Produtos</option>
+                                <option value="customers">Clientes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="report-period">Período:</label>
+                            <select id="report-period">
+                                <option value="month">Mensal</option>
+                                <option value="quarter">Trimestral</option>
+                                <option value="semester">Semestral</option>
+                                <option value="year">Anual</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:1rem; flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="SystemControlPro.generatePeriodReportPDF()">
+                            <i class="fas fa-file-pdf"></i> Gerar PDF
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <div class="chart-card">
+                            <h3><i class="fas fa-chart-line"></i> Vendas por mês (visual)</h3>
+                            <canvas id="monthlySalesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // gráfico simples (se quiser popular real, some vendas por mês)
+            const empresaId = this.currentEmpresa?.id;
+            const pedidos = (this.pedidos[empresaId]||[]);
+            const map = {};
+            pedidos.forEach(p=>{
+                const m = new Date(p.data).toISOString().slice(0,7); // YYYY-MM
+                map[m] = (map[m]||0) + p.total;
+            });
+            const labels = Object.keys(map).sort();
+            const valores = labels.map(k=>map[k]);
+
+            const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Vendas (R$)', data: valores }] },
+                options: { responsive:true, maintainAspectRatio:false }
+            });
+        },
+
+        generatePeriodReportPDF: function(){
+            const type = document.getElementById('report-type').value; // 'sales'|'products'|'customers'
+            const period = document.getElementById('report-period').value; // 'month'|'quarter'|'semester'|'year'
+            const empresa = this.currentEmpresa;
+            const empresaId = empresa.id;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // range de datas
+            const now = new Date();
+            const start = new Date(now);
+            if (period==='month') start.setMonth(start.getMonth()-1);
+            if (period==='quarter') start.setMonth(start.getMonth()-3);
+            if (period==='semester') start.setMonth(start.getMonth()-6);
+            if (period==='year') start.setFullYear(start.getFullYear()-1);
+
+            doc.setFontSize(14);
+            doc.text(`${empresa.nome} - Relatório ${type==='sales'?'de Vendas': type==='products'?'de Produtos':'de Clientes'}`, 14, 16);
+            doc.setFontSize(11);
+            doc.text(`Período: ${start.toLocaleDateString()} a ${now.toLocaleDateString()}`, 14, 24);
+
+            if (type==='sales') {
+                const pedidos = (this.pedidos[empresaId]||[]).filter(p=>{
+                    const d = new Date(p.data);
+                    return d>=start && d<=now;
+                });
+
+                const body = pedidos.flatMap(p => p.items.map(it=>{
+                    const nome = (this.produtos[empresaId]||[]).find(pp=>pp.id===it.produtoId)?.nome || it.produtoId;
+                    return [ `#${p.id}`, new Date(p.data).toLocaleDateString(), nome, String(it.quantidade), `R$ ${(it.preco).toFixed(2)}`, `R$ ${(it.total).toFixed(2)}` ];
+                }));
+
+                const totalPeriodo = pedidos.reduce((a,b)=>a+b.total,0);
+
+                doc.autoTable({
+                    startY: 30,
+                    head: [['Pedido','Data','Produto','Qtd','Preço','Total']],
+                    body: body.length ? body : [['-','-','-','-','-','-']]
+                });
+
+                let y = doc.lastAutoTable.finalY + 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`TOTAL DO PERÍODO: R$ ${totalPeriodo.toFixed(2)}`, 14, y);
+            }
+
+            if (type==='products') {
+                const prods = (this.produtos[empresaId]||[]);
+                const body = prods.map(p=>[p.nome,p.categoria,`R$ ${p.preco.toFixed(2)}`, p.estoque, p.status==='active'?'Ativo':'Inativo']);
+                doc.autoTable({ startY: 30, head: [['Produto','Categoria','Preço','Estoque','Status']], body: body.length?body:[['-','-','-','-','-']] });
+            }
+
+            if (type==='customers') {
+                const cls = (this.clientes[empresaId]||[]);
+                const body = cls.map(c=>[c.nome, c.email || '-', c.telefone || '-', new Date(c.dataCadastro).toLocaleDateString(), c.status==='active'?'Ativo':'Inativo']);
+                doc.autoTable({ startY: 30, head: [['Cliente','E-mail','Telefone','Cadastro','Status']], body: body.length?body:[['-','-','-','-','-']] });
+            }
+
+            doc.save(`relatorio_${type}_${period}.pdf`);
+        },
+        
+        // ===== ADMINISTRAÇÃO =====
+        loadAdmin: function() {
+            const adminTab = document.getElementById('admin');
+            
+            if (this.currentUser.role === 'system_admin') {
+                adminTab.innerHTML = `
+                    <div class="admin-section">
+                        <h3><i class="fas fa-lock"></i> Área do Administrador do Sistema</h3>
+                        <p>Esta área permite gerenciar todas as empresas do sistema.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <h2><i class="fas fa-building"></i> Gerenciamento de Empresas</h2>
+                        <button class="btn btn-primary" onclick="SystemControlPro.showAddCompanyModal()">
+                            <i class="fas fa-plus"></i> Adicionar Empresa
+                        </button>
+                        
+                        <table style="margin-top: 1rem;">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Plano</th>
+                                    <th>Status</th>
+                                    <th>Data de Criação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.empresas.map(empresa => `
+                                    <tr>
+                                        <td>${empresa.nome}</td>
+                                        <td>
+                                            ${empresa.plano === 'basic' ? 
+                                                '<span class="plan-badge plan-basic">Básico</span>' : 
+                                                '<span class="plan-badge plan-premium">Premium</span>'}
+                                            ${empresa.status === 'trial' ? '<span class="plan-badge plan-trial">Trial</span>' : ''}
+                                        </td>
+                                        <td>
+                                            ${empresa.status === 'active' ? 
+                                                '<span class="status-badge status-active">Ativa</span>' : 
+                                              empresa.status === 'trial' ? 
+                                                '<span class="status-badge status-pending">Trial</span>' : 
+                                                '<span class="status-badge status-inactive">Inativa</span>'}
+                                        </td>
+                                        <td>${new Date(empresa.dataCriacao).toLocaleDateString()}</td>
+                                        <td class="action-buttons">
+                                            <button class="btn btn-secondary" onclick="SystemControlPro.editCompany(${empresa.id})"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-danger" onclick="SystemControlPro.deleteCompany(${empresa.id})"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                const e = this.currentEmpresa || {};
+                adminTab.innerHTML = `
+                    <div class="admin-section">
+                        <h3><i class="fas fa-lock"></i> Área Restrita - Acesso apenas para administradores</h3>
+                        <p>Configure sua empresa e segurança da conta.</p>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-cog"></i> Configurações da Empresa</h2>
+                        <div class="form-group">
+                            <label for="company-name">Nome da Empresa:</label>
+                            <input type="text" id="company-name" value="${e.nome || ''}" placeholder="Nome da empresa">
+                        </div>
+                        <div class="form-group">
+                            <label for="company-cnpj">CNPJ:</label>
+                            <input type="text" id="company-cnpj" value="${e.cnpj || ''}" placeholder="CNPJ">
+                        </div>
+                        <div class="form-group">
+                            <label for="company-address">Endereço:</label>
+                            <input type="text" id="company-address" value="${e.endereco || ''}" placeholder="Endereço">
+                        </div>
+                        <div class="form-group">
+                            <label for="company-phone">Telefone:</label>
+                            <input type="text" id="company-phone" value="${e.telefone || ''}" placeholder="Telefone">
+                        </div>
+                        <div class="form-group">
+                            <label for="company-email">E-mail:</label>
+                            <input type="email" id="company-email" value="${e.email || ''}" placeholder="E-mail">
+                        </div>
+                        <button class="btn btn-primary" onclick="SystemControlPro.updateCompanySettings()">
+                            <i class="fas fa-save"></i> Salvar Configurações
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-shield-alt"></i> Configurações de Segurança</h2>
+                        <div class="form-group">
+                            <label for="admin-password">Alterar Senha de Administração:</label>
+                            <input type="password" id="admin-password" placeholder="Nova senha">
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-password-confirm">Confirmar Senha:</label>
+                            <input type="password" id="admin-password-confirm" placeholder="Confirmar nova senha">
+                        </div>
+                        <button class="btn btn-primary" onclick="SystemControlPro.updateAdminPassword()">
+                            <i class="fas fa-key"></i> Atualizar Senha
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-bullseye"></i> Metas e Comissões da Equipe</h2>
+                        <div class="form-group">
+                            <label for="meta-geral">Meta Mensal Geral (R$):</label>
+                            <input type="number" id="meta-geral" value="${this.configuracoes[e.id]?.metaMensal || 0}" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="comissao-geral">Comissão Percentual Geral (%):</label>
+                            <input type="number" id="comissao-geral" value="${this.configuracoes[e.id]?.comissaoPercentual || 0}" step="0.01">
+                        </div>
+                        <h3 style="margin-top: 1.5rem;">Metas e Comissões por Vendedor</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Meta (R$)</th>
+                                    <th>Comissão (%)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(this.usuarios[e.id] || []).filter(u => u.role === 'seller').map(u => `
+                                    <tr>
+                                        <td>${u.name}</td>
+                                        <td><input type="number" id="meta-${u.id}" value="${this.configuracoes[e.id]?.metasPorUsuario?.[u.id] || ''}" step="0.01" placeholder="Usar valor geral"></td>
+                                        <td><input type="number" id="comissao-${u.id}" value="${this.configuracoes[e.id]?.comissaoPorUsuario?.[u.id] || ''}" step="0.01" placeholder="Usar valor geral"></td>
+                                        <td><button class="btn btn-primary" onclick="SystemControlPro.salvarMetaComissao(${u.id})">Salvar</button></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-image"></i> Logo da Empresa</h2>
+                        ${e.logo ? `
+                            <div style="margin-bottom: 1rem;">
+                                <img src="${e.logo}" alt="Logo da empresa" style="max-width: 150px; max-height: 150px; border-radius: 50%;">
+                            </div>
+                        ` : ''}
+                        <div class="form-group">
+                            <label for="company-logo">Alterar Logo:</label>
+                            <input type="file" id="company-logo" accept="image/*">
+                        </div>
+                        <button class="btn btn-primary" onclick="SystemControlPro.uploadLogo()">
+                            <i class="fas fa-upload"></i> Upload Logo
+                        </button>
+                    </div>
+                `;
+            }
+        },
+
+        updateAdminPassword: function() {
+            const pass  = document.getElementById('admin-password').value;
+            const pass2 = document.getElementById('admin-password-confirm').value;
+
+            if (!pass) { this.showToast('Informe a nova senha', 'error'); return; }
+            if (pass !== pass2) { this.showToast('As senhas não coincidem', 'error'); return; }
+            if (!this.currentEmpresa) { this.showToast('Entre em uma empresa primeiro', 'error'); return; }
+
+            const empresaId = this.currentEmpresa.id;
+            const users = this.usuarios[empresaId] || [];
+            const idx = users.findIndex(u => u.id === this.currentUser.id);
+            if (idx < 0) { this.showToast('Usuário não encontrado', 'error'); return; }
+
+            this.usuarios[empresaId][idx].password = pass;
+            this.currentUser.password = pass; // mantém a sessão coerente
+            this.saveToStorage();
+
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password-confirm').value = '';
+            this.showToast('Senha atualizada com sucesso!', 'success');
+        },
+
+        updateCompanySettings: function() {
+            if (!this.currentEmpresa) return;
+            const name = document.getElementById('company-name').value.trim();
+            const cnpj = document.getElementById('company-cnpj').value.trim();
+            const addr = document.getElementById('company-address').value.trim();
+            const phone = document.getElementById('company-phone').value.trim();
+            const email = document.getElementById('company-email').value.trim();
+
+            if (!name || !cnpj || !addr) { this.showToast('Preencha nome, CNPJ e endereço', 'error'); return; }
+
+            const i = this.empresas.findIndex(e => e.id === this.currentEmpresa.id);
+            if (i < 0) { this.showToast('Empresa não encontrada', 'error'); return; }
+
+            this.empresas[i].nome = name;
+            this.empresas[i].cnpj = cnpj;
+            this.empresas[i].endereco = addr;
+            this.empresas[i].telefone = phone;
+            this.empresas[i].email = email;
+            
+            this.currentEmpresa = this.empresas[i];
+            this.saveToStorage();
+            
+            // Atualizar header
+            document.getElementById('empresa-name').textContent = `${this.currentEmpresa.nome} (${this.currentEmpresa.codigo})`;
+            
+            this.showToast('Configurações salvas!', 'success');
+        },
+
+        salvarMetaComissao: function(userId) {
+            if (!this.currentEmpresa) return;
+            const empresaId = this.currentEmpresa.id;
+            
+            const meta = parseFloat(document.getElementById(`meta-${userId}`).value) || null;
+            const comissao = parseFloat(document.getElementById(`comissao-${userId}`).value) || null;
+            
+            if (!this.configuracoes[empresaId]) {
+                this.configuracoes[empresaId] = {
+                    empresaId: empresaId,
+                    metaMensal: 0,
+                    comissaoPercentual: 0,
+                    metasPorUsuario: {},
+                    comissaoPorUsuario: {}
+                };
+            }
+            
+            if (meta !== null) {
+                this.configuracoes[empresaId].metasPorUsuario[userId] = meta;
+            } else {
+                delete this.configuracoes[empresaId].metasPorUsuario[userId];
+            }
+            
+            if (comissao !== null) {
+                this.configuracoes[empresaId].comissaoPorUsuario[userId] = comissao;
+            } else {
+                delete this.configuracoes[empresaId].comissaoPorUsuario[userId];
+            }
+            
+            this.saveToStorage();
+            this.showToast('Configurações salvas com sucesso!', 'success');
+        },
+
+        uploadLogo: function() {
+            if (!this.currentEmpresa) return;
+            const fileInput = document.getElementById('company-logo');
+            
+            if (fileInput.files.length === 0) {
+                this.showToast('Selecione uma imagem', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const logoDataUrl = e.target.result;
+                const empresaId = this.currentEmpresa.id;
+                const i = this.empresas.findIndex(e => e.id === empresaId);
+                
+                if (i >= 0) {
+                    this.empresas[i].logo = logoDataUrl;
+                    this.currentEmpresa.logo = logoDataUrl;
+                    this.saveToStorage();
+                    
+                    // Atualizar visualização se estiver na página de admin
+                    this.loadAdmin();
+                    this.showToast('Logo atualizada com sucesso!', 'success');
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        },
+        
+        // ===== USUÁRIOS =====
+        loadUsers: function() {
+            const usersTab = document.getElementById('users');
+            const empresaId = this.currentEmpresa.id;
+            const usuarios = this.usuarios[empresaId] || [];
+            
+            usersTab.innerHTML = `
+                <div class="admin-section">
+                    <h3><i class="fas fa-lock"></i> Área Restrita - Acesso apenas para administradores</h3>
+                    <p>Esta área permite gerenciar os usuários da sua empresa.</p>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-users-cog"></i> Gerenciamento de Usuários</h2>
+                    
+                    <button class="btn btn-primary" onclick="SystemControlPro.showUserForm()">
+                        <i class="fas fa-plus"></i> Adicionar Usuário
+                    </button>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Usuário</th>
+                                <th>Tipo</th>
+                                <th>Permissões</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${usuarios.map(u => `
+                                <tr>
+                                    <td>${u.name}</td>
+                                    <td>${u.username}</td>
+                                    <td>
+                                        ${u.role === 'admin' ? 
+                                            '<span class="access-badge access-admin">Admin</span>' : 
+                                            '<span class="access-badge access-seller">Vendedor</span>'}
+                                    </td>
+                                    <td>
+                                        ${u.permissions.includes('all') ? 
+                                            '<span class="permission-badge">Total</span>' : 
+                                            u.permissions.map(p => `<span class="permission-badge">${p}</span>`).join('')}
+                                    </td>
+                                    <td>
+                                        ${u.status === 'active' ? 
+                                            '<span class="status-badge status-active">Ativo</span>' : 
+                                            '<span class="status-badge status-inactive">Inativo</span>'}
+                                    </td>
+                                    <td class="action-buttons">
+                                        <button class="btn btn-secondary" onclick="SystemControlPro.showUserForm(${u.id})"><i class="fas fa-edit"></i></button>
+                                        ${u.id !== this.currentUser.id ? 
+                                            `<button class="btn btn-danger" onclick="SystemControlPro.deleteUser(${u.id})"><i class="fas fa-trash"></i></button>` : 
+                                            ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        },
+
+        showUserForm: function(id = null) {
+            const empresaId = this.currentEmpresa.id;
+            const usuarios = this.usuarios[empresaId] || [];
+            const isEdit = !!id;
+            const u = isEdit ? usuarios.find(x => x.id === id) : {
+                id: Date.now(),
+                username: '',
+                password: '',
+                name: '',
+                role: 'seller',
+                email: '',
+                permissions: [],
+                status: 'active'
+            };
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            modalTitle.innerHTML = `${isEdit ? '<i class="fas fa-edit"></i> Editar' : '<i class="fas fa-plus"></i> Novo'} Usuário`;
+
+            modalBody.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="user-name" value="${u.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Usuário</label>
+                        <input type="text" id="user-username" value="${u.username}" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" id="user-email" value="${u.email}">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="user-role">
+                            <option value="seller" ${u.role === 'seller' ? 'selected' : ''}>Vendedor</option>
+                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option>
+                        </select>
+                    </div>
+                </div>
+                ${!isEdit ? `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" id="user-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirmar Senha</label>
+                        <input type="password" id="user-password-confirm" required>
+                    </div>
+                </div>
+                ` : ''}
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="user-status">
+                        <option value="active" ${u.status === 'active' ? 'selected' : ''}>Ativo</option>
+                        <option value="inactive" ${u.status === 'inactive' ? 'selected' : ''}>Inativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Permissões</label>
+                    <div>
+                        <label><input type="checkbox" name="user-permissions" value="sales" ${u.permissions.includes('sales') || u.permissions.includes('all') ? 'checked' : ''}> Vendas</label>
+                        <label><input type="checkbox" name="user-permissions" value="customers" ${u.permissions.includes('customers') || u.permissions.includes('all') ? 'checked' : ''}> Clientes</label>
+                        <label><input type="checkbox" name="user-permissions" value="products" ${u.permissions.includes('products') || u.permissions.includes('all') ? 'checked' : ''}> Produtos</label>
+                        <label><input type="checkbox" name="user-permissions" value="orders" ${u.permissions.includes('orders') || u.permissions.includes('all') ? 'checked' : ''}> Pedidos</label>
+                        <label><input type="checkbox" name="user-permissions" value="quotes" ${u.permissions.includes('quotes') || u.permissions.includes('all') ? 'checked' : ''}> Orçamentos</label>
+                        <label><input type="checkbox" name="user-permissions" value="reports" ${u.permissions.includes('reports') || u.permissions.includes('all') ? 'checked' : ''}> Relatórios</label>
+                        ${u.role === 'admin' ? '<label><input type="checkbox" name="user-permissions" value="all" checked disabled> Todas as permissões</label>' : ''}
+                    </div>
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem">
+                    <button class="btn btn-primary" onclick="SystemControlPro.saveUserFromModal(${isEdit ? u.id : 'null'})">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                    <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('form-modal')">Cancelar</button>
+                </div>
+            `;
+
+            document.getElementById('form-modal').style.display = 'flex';
+        },
+
+        saveUserFromModal: function(id = null) {
+            const empresaId = this.currentEmpresa.id;
+            this.usuarios[empresaId] = this.usuarios[empresaId] || [];
+            
+            const name = document.getElementById('user-name').value.trim();
+            const username = document.getElementById('user-username').value.trim();
+            const email = document.getElementById('user-email').value.trim();
+            const role = document.getElementById('user-role').value;
+            const status = document.getElementById('user-status').value;
+            
+            let password = '';
+            if (!id) {
+                password = document.getElementById('user-password').value;
+                const passwordConfirm = document.getElementById('user-password-confirm').value;
+                
+                if (password !== passwordConfirm) {
+                    this.showToast('As senhas não coincidem', 'error');
+                    return;
+                }
+            }
+            
+            // Coletar permissões
+            const permissions = [];
+            if (role === 'admin') {
+                permissions.push('all');
+            } else {
+                document.querySelectorAll('input[name="user-permissions"]:checked').forEach(cb => {
+                    if (cb.value !== 'all') permissions.push(cb.value);
+                });
+            }
+            
+            if (!name || !username) {
+                this.showToast('Preencha nome e usuário', 'error');
+                return;
+            }
+            
+            if (!id && !password) {
+                this.showToast('Informe uma senha', 'error');
+                return;
+            }
+            
+            const userData = {
+                id: id || Date.now(),
+                name,
+                username,
+                email,
+                role,
+                permissions,
+                status
+            };
+            
+            if (password) userData.password = password;
+            
+            const usuarios = this.usuarios[empresaId];
+            const index = usuarios.findIndex(u => u.id === userData.id);
+            
+            if (index >= 0) {
+                // Edição - manter a senha existente se não for alterada
+                if (!password) userData.password = usuarios[index].password;
+                usuarios[index] = userData;
+                
+                // Se o usuário editado for o atual, atualizar a sessão
+                if (userData.id === this.currentUser.id) {
+                    this.currentUser = userData;
+                }
+            } else {
+                // Novo usuário
+                usuarios.push(userData);
+            }
+            
+            // Verificar se há pelo menos um admin ativo
+            const activeAdmins = usuarios.filter(u => u.role === 'admin' && u.status === 'active');
+            if (activeAdmins.length === 0) {
+                this.showToast('Deve haver pelo menos um administrador ativo', 'error');
+                return;
+            }
+            
+            this.saveToStorage();
+            this.closeModal('form-modal');
+            this.loadUsers();
+            this.showToast('Usuário salvo com sucesso!', 'success');
+        },
+
+        deleteUser: function(id) {
+            const empresaId = this.currentEmpresa.id;
+            const usuarios = this.usuarios[empresaId] || [];
+            
+            if (id === this.currentUser.id) {
+                this.showToast('Você não pode excluir a si mesmo', 'error');
+                return;
+            }
+            
+            const user = usuarios.find(u => u.id === id);
+            if (!user) {
+                this.showToast('Usuário não encontrado', 'error');
+                return;
+            }
+            
+            // Verificar se é o último admin ativo
+            if (user.role === 'admin') {
+                const activeAdmins = usuarios.filter(u => u.role === 'admin' && u.status === 'active' && u.id !== id);
+                if (activeAdmins.length === 0) {
+                    this.showToast('Não é possível excluir o último administrador ativo', 'error');
+                    return;
+                }
+            }
+            
+            this.showConfirmModal('Excluir usuário', `Tem certeza que deseja excluir o usuário ${user.name}?`, () => {
+                this.usuarios[empresaId] = usuarios.filter(u => u.id !== id);
+                this.saveToStorage();
+                this.loadUsers();
+                this.closeModal('confirm-modal');
+                this.showToast('Usuário excluído com sucesso', 'success');
+            });
+        }
+    };
+
+    // Inicializar o sistema quando a página carregar
+    window.onload = function() {
+        SystemControlPro.init();
+    };
+</script>
+
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-# Sistema de Gestão Multi-empresas
+# Sistema de Gestão - Jama Se Tem Ferramentas
 
 Sistema completo para gestão de vendas, orçamentos, produtos e metas para a empresa "Jama Se Tem Ferramentas".
 

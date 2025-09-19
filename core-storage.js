@@ -131,6 +131,16 @@
     window.SCP = Object.assign(window.SCP || {}, {
       syncFromAdmin: bridgeSyncFromSystemControlPro
     });
+
+        // Expor a API básica no objeto SCP
+    window.SCP = Object.assign(window.SCP, {
+      getData,
+      setData,
+      pushData,
+      nextId,
+      seedIfEmpty, // útil para o index/portal puxarem empresas.json quando vazio
+    });
+
     try {
       const sys = JSON.parse(localStorage.getItem('systemControlPro_data') || '{}');
 

@@ -5464,34 +5464,91 @@ window.onload = async () => {
    })();
 
 </script>
-<!-- suporte: limpar storage do app e forçar seed quando ?scp_reseed=1 -->
+<!-- suporte: limpar chaves do app e forçar seed quando ?scp_reseed=1 -->
 <script>
   (function () {
-    const p = new URLSearchParams(location.search);
-    const shouldReseed = p.get('scp_reseed') === '1';
+    var p = new URLSearchParams(location.search);
+    var reseed = p.get('scp_reseed') === '1';
+  
+    // sempre manter true no portal do vendedor para buscar empresas.json
     window.SCP_DEMO_SEED = true;
 
-    if (shouldReseed) {
-      const KEYS = ['systemControlPro_data','empresas','usuarios','produtos','clientes','orcamentos','pedidos','configFisco','scp_session','scp_last_session'];
-      KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    if (reseed) {
+      var KEYS = [
+        'systemControlPro_data','empresas','usuarios','produtos','clientes',
+        'orcamentos','pedidos','configFisco','scp_session','scp_last_session'
+      ];
+      try { KEYS.forEach(function(k){ localStorage.removeItem(k); }); } catch(e){}
       try { sessionStorage.removeItem('scp_session'); } catch(e){}
+      // pronto: na carga do core-storage o seed vai puxar do empresas.json
     }
-  })();
-</script>
+   
+ 
+ 
 
-<!-- bloco com popularSelectEmpresas / carregarEmpresas / DOMContentLoaded -->
-<script>
-  (function () {
-    // ... todo o seu código mostrado (popularSelectEmpresas, carregarEmpresas, DOMContentLoaded) ...
-    document.addEventListener('DOMContentLoaded', async () => {
-      const empresas = await carregarEmpresas();
-      popularSelectEmpresas(empresas);
+ 
+
+  // Exemplo de integração no LOGIN: popular o select
+  function popularSelectEmpresas(empresas) {
+    const sel = document.querySelector('#login-empresa, #empresa, select[name="empresa"]');
+    if (!sel) { console.warn('Select de empresa não encontrado'); return; }
+
+    sel.innerHTML = '<option value="">Selecione a empresa</option>';
+    empresas.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id ?? e.codigo ?? e.nome;
+      opt.textContent = `${e.nome} ${e.codigo ? '('+e.codigo+')' : ''}`;
+      sel.appendChild(opt);
     });
+  }
+
+    
+  // Carrega as empresas a partir do core-storage (SCP)
+  async function carregarEmpresas() {
+    try {
+      // Semear se estiver vazio (usa empresas.json)
+      if (window.SCP_DEMO_SEED === true && window.SCP?.seedIfEmpty) {
+        await window.SCP.seedIfEmpty();
+      }
+    } catch (e) {
+      console.warn('Seed falhou:', e);
+    }
+
+    // Preferir API do core-storage
+    if (window.SCP?.getData) {
+      return window.SCP.getData('empresas') || [];
+    }
+
+    // Fallback: ler do espelho no localStorage se o core ainda não subiu
+    try {
+      const raw = localStorage.getItem('systemControlPro_data') || '{}';
+      const parsed = JSON.parse(raw);
+      return parsed.empresas || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const empresas = await carregarEmpresas();
+    popularSelectEmpresas(empresas);
+  });
+ 
+
+   
+  
+  
+  </script>
   })();
-</script>
 
 <script src="core-storage.js" defer></script>
+
+
+
+<!-- depois seus scripts do app -->
 <script src="vendedor.js" defer></script>
+ 
 
  
 

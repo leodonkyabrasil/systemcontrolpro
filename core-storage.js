@@ -255,9 +255,9 @@
   }
 
   function _saveFiscalCfg(empresaId, cfg) {
-    configFisco[empresaId] = { ..._getFiscalCfg(empresaId), ...cfg };
-    setData('configFisco', configFisco);
-  }
+  configFisco[empresaId] = { ..._getFiscalCfg(empresaId), ...cfg };
+  setData('configFisco', configFisco);
+}
 
   // ====== EXPOSE ======
   window.SCP = {

@@ -71,9 +71,22 @@
 
   // 3) Pré-carrega empresas.json e coloca no localStorage ANTES de outros scripts
   window.SCP = window.SCP || {};
+
+// Polyfill: se o core-storage não estiver exposto ainda, usa localStorage direto
+  if (typeof window.SCP.getData !== 'function') {
+    window.SCP.getData = function (key) {
+      try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    };
+  }
+  if (typeof window.SCP.setData !== 'function') {
+    window.SCP.setData = function (key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+    };
+  }
+
   window.SCP_EMPRESAS_PROMISE = (async () => {
     try {
-      const r = await fetch('/empresas.json?ts=' + Date.now(), { cache: 'no-store' });
+      const r = await fetch(url.toString() + '?ts=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
       const empresas = Array.isArray(data.empresas) ? data.empresas : [];
@@ -194,6 +207,16 @@ const STORAGE_KEY = 'systemControlPro_data';
 const ADMIN_ACCOUNT_KEY = 'scp_admin_account';
 const ADMIN_SESSION_KEY = 'scp_admin_session';
 
+// Polyfill leve para SCP (usa localStorage direto se o core ainda não subiu)
+window.SCP = window.SCP || {};
+if (typeof window.SCP.getData !== 'function') {
+  window.SCP.getData = function (k) { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; } };
+}
+if (typeof window.SCP.setData !== 'function') {
+  window.SCP.setData = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+}
+
+
 /* ===== STATE COMPARTILHADO ===== */
 let state = {
   empresas: [],
@@ -269,7 +292,7 @@ async function seedIfEmpty(){
   if (hadData && Array.isArray(state.empresas) && state.empresas.length > 0) return;
 
   try{
-    const res = await fetch('/empresas.json', { cache: 'no-cache' });
+    const res = await fetch(new URL('empresas.json', document.baseURI), { cache: 'no-cache' });
     const data = await res.json();
     state.empresas = data.empresas || [];
     state.usuarios = {}; state.produtos={}; state.clientes={};

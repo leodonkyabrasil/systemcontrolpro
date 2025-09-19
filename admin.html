@@ -72,6 +72,19 @@
   // 3) Pré-carrega empresas.json e coloca no localStorage ANTES de outros scripts
   window.SCP = window.SCP || {};
 
+    // Polyfill: se o core ainda não expôs a API, usa localStorage diretamente
+  if (typeof window.SCP.getData !== 'function') {
+    window.SCP.getData = function (k) {
+      try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; }
+    };
+  }
+  if (typeof window.SCP.setData !== 'function') {
+    window.SCP.setData = function (k, v) {
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+    };
+  }
+
+
 // Polyfill: se o core-storage não estiver exposto ainda, usa localStorage direto
   if (typeof window.SCP.getData !== 'function') {
     window.SCP.getData = function (key) {
@@ -292,7 +305,8 @@ async function seedIfEmpty(){
   if (hadData && Array.isArray(state.empresas) && state.empresas.length > 0) return;
 
   try{
-    const res = await fetch(new URL('empresas.json', document.baseURI), { cache: 'no-cache' });
+    const url = new URL('empresas.json', document.baseURI);
+    const res = await fetch(url.toString(), { cache: 'no-cache' });
     const data = await res.json();
     state.empresas = data.empresas || [];
     state.usuarios = {}; state.produtos={}; state.clientes={};
@@ -939,7 +953,8 @@ function showApp(){
 (async () => {
   async function carregarEmpresas() {
     try {
-      const resp = await fetch('/empresas.json?ts=' + Date.now(), { cache: 'no-store' });
+      const url = new URL('empresas.json', document.baseURI);
+      const r = await fetch(url.toString() + '?ts=' + Date.now(), { cache: 'no-store' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const data = await resp.json();
       if (data && Array.isArray(data.empresas)) {

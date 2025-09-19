@@ -96,9 +96,9 @@
     if (precisaSemear) {
       try {
         const bust = (window.SCP_BUILD_ID || Date.now());
-        const resp = await fetch('./empresas.json?v=' + bust, { cache: 'no-store' });
-
-        if (!resp.ok) throw new Error('empresas.json não encontrado');
+        const url = new URL('empresas.json', document.baseURI);
+    const resp = await fetch('./empresas.json?v=' + bust, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
         const empresas = Array.isArray(data.empresas) ? data.empresas : [];
         setData('empresas', empresas);

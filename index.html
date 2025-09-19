@@ -5479,13 +5479,13 @@ window.onload = async () => {
   })();
 </script>
 
-<!-- bloco com popularSelectEmpresas / carregarEmpresas / DOMContentLoaded -->
+<!-- bloco com popularEmpresasSelect / carregarEmpresas / DOMContentLoaded -->
 <script>
   (function () {
-    // ... todo o seu código mostrado (popularSelectEmpresas, carregarEmpresas, DOMContentLoaded) ...
+    // ... todo o seu código mostrado (popularEmpresasSelect, carregarEmpresas, DOMContentLoaded) ...
     document.addEventListener('DOMContentLoaded', async () => {
       const empresas = await carregarEmpresas();
-      popularSelectEmpresas(empresas);
+      popularEmpresasSelect(empresas);
     });
   // Carrega empresas a partir do core-storage (SCP) ou do espelho no localStorage
   async function carregarEmpresas() {
@@ -5518,7 +5518,11 @@ window.onload = async () => {
 
 <script src="core-storage.js" defer></script>
 <script src="vendedor.js" defer></script>
-
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    popularEmpresasSelect();   // 👈 chama a função exposta no window
+  });
+</script>
  
 
 </body>

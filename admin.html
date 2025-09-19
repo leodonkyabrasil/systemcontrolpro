@@ -99,6 +99,7 @@
 
   window.SCP_EMPRESAS_PROMISE = (async () => {
     try {
+      const url = new URL('empresas.json', document.baseURI);
       const r = await fetch(url.toString() + '?ts=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
@@ -953,9 +954,10 @@ function showApp(){
 (async () => {
   async function carregarEmpresas() {
     try {
-      const url = new URL('empresas.json', document.baseURI);
-      const r = await fetch(url.toString() + '?ts=' + Date.now(), { cache: 'no-store' });
+      const EMPRESAS_URL = './empresas.json';
+      const resp = await fetch(EMPRESAS_URL + '?ts=' + Date.now(), { cache: 'no-store' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      
       const data = await resp.json();
       if (data && Array.isArray(data.empresas)) {
         localStorage.setItem('empresas', JSON.stringify(data.empresas));
@@ -1059,7 +1061,7 @@ function showApp(){
     try { return JSON.parse(localStorage.getItem('empresas') || '[]'); } catch { return []; }
   }
 
-  function popularSelectEmpresas(empresas) {
+  function popularEmpresasSelect(empresas) {
     const sel = document.querySelector(SELECTOR);
     if (!sel) return false;
 
@@ -1116,7 +1118,7 @@ function showApp(){
     blindarLocalStorage(empresas);
 
     // 1) Tentativa imediata
-    popularSelectEmpresas(empresas);
+    popularEmpresasSelect(empresas);
 
     // 2) Reforço cronometrado: repopula várias vezes nos primeiros segundos
     let tries = 0;
@@ -1126,7 +1128,7 @@ function showApp(){
       // se o select sumiu ou voltou à demo, repopula
       const sel = document.querySelector(SELECTOR);
       if (!sel || sel.options.length <= 1 || isDemoOnly()) {
-        popularSelectEmpresas(empresas);
+        popularEmpresasSelect(empresas);
       }
       if (tries >= maxTries) clearInterval(timer);
     }, 200);
@@ -1136,7 +1138,7 @@ function showApp(){
     if (sel && 'MutationObserver' in window) {
       const mo = new MutationObserver(() => {
         if (sel.options.length <= 1) {
-          popularSelectEmpresas(empresas);
+          popularEmpresasSelect(empresas);
         }
       });
       mo.observe(sel, { childList: true });

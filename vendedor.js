@@ -116,6 +116,7 @@ empresas = empresas.filter(function(e){
       sel.appendChild(opt);
     }
   }
+window.popularEmpresasSelect = popularEmpresasSelect;
 
   function onLoginSubmit(ev) {
     if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();

@@ -456,6 +456,15 @@
             .sorting-options {
                 flex-direction: column;
             }
+            /* Aviso de preço sujeito a confirmação */
+.price-note {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  border-left: 3px solid #f39c12;
+  padding-left: 8px;
+  color: #b06000;
+}
         }
     </style>
 </head>
@@ -669,277 +678,27 @@
             currentSort: 'default',
             phoneNumber: null,
             
-            init: function() {
-                // Verificar se o usuário está logado
-                this.checkLoginStatus();
-                
-                // Se estiver logado, carregar os dados
-                if (this.currentUser) {
-                    this.loadProducts();
-                    this.loadCompaniesFilter();
-                    this.loadCategoriesFilter();
-                    this.loadCartFromStorage();
-                    this.updateCartUI();
-                    this.loadBestSellers();
-                }
-                
-                // Configurar eventos de ordenação
-                this.setupSortingEvents();
-                
-                // Aplicar ordenação automática baseada no dia
-                this.applyDailySorting();
-            },
-            
-            // Configurar eventos de ordenação
-            setupSortingEvents: function() {
-                document.querySelectorAll('.sort-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const sortType = e.currentTarget.getAttribute('data-sort');
-                        this.sortProducts(sortType);
-                        
-                        // Atualizar UI dos botões
-                        document.querySelectorAll('.sort-btn').forEach(b => {
-                            b.classList.remove('active');
-                        });
-                        e.currentTarget.classList.add('active');
-                    });
-                });
-            },
-            
-            // Aplicar ordenação automática baseada no dia
-            applyDailySorting: function() {
-                const dayOfWeek = new Date().getDay(); // 0 = Domingo, 1 = Segunda, etc.
-                
-                let sortType = 'default';
-                
-                switch(dayOfWeek) {
-                    case 0: // Domingo - ordenar por preço (menor primeiro)
-                        sortType = 'price-asc';
-                        break;
-                    case 1: // Segunda - ordenar por preço (maior primeiro)
-                        sortType = 'price-desc';
-                        break;
-                    case 2: // Terça - ordenar por empresa
-                        sortType = 'company';
-                        break;
-                    case 3: // Quarta - ordenar por vendas
-                        sortType = 'sales';
-                        break;
-                    case 4: // Quinta - ordenar por preço (menor primeiro)
-                        sortType = 'price-asc';
-                        break;
-                    case 5: // Sexta - ordenar por preço (maior primeiro)
-                        sortType = 'price-desc';
-                        break;
-                    case 6: // Sábado - ordenar por empresa em destaque
-                        sortType = 'company-featured';
-                        break;
-                }
-                
-                // Aplicar a ordenação
-                this.sortProducts(sortType);
-                
-                // Atualizar UI do botão ativo
-                document.querySelectorAll('.sort-btn').forEach(b => {
-                    b.classList.remove('active');
-                    if (b.getAttribute('data-sort') === sortType) {
-                        b.classList.add('active');
-                    }
-                });
-            },
-            
-            // Ordenar produtos
-            sortProducts: function(sortType) {
-                this.currentSort = sortType;
-                this.filterProducts();
-            },
-            
-            // Verificar status de login
-            checkLoginStatus: function() {
-                const user = JSON.parse(localStorage.getItem('customerPortal_user'));
-                if (user) {
-                    this.currentUser = user;
-                    document.getElementById('login-container').style.display = 'none';
-                    document.querySelector('header').style.display = 'flex';
-                    document.querySelector('.container').style.display = 'block';
-                } else {
-                    document.getElementById('login-container').style.display = 'flex';
-                    document.querySelector('header').style.display = 'none';
-                    document.querySelector('.container').style.display = 'none';
-                }
-            },
-            
-            // Mostrar login com telefone
-            showPhoneLogin: function() {
-                document.getElementById('phone-login-modal').style.display = 'flex';
-            },
-            
-            // Enviar código de verificação
-            sendVerificationCode: function() {
-                const phoneNumber = document.getElementById('phone-number').value;
-                
-                if (!phoneNumber) {
-                    this.showToast('Digite um número de telefone válido', 'error');
-                    return;
-                }
-                
-                this.phoneNumber = phoneNumber;
-                
-                // Gerar código de 6 dígitos
-                this.smsCode = Math.floor(100000 + Math.random() * 900000);
-                
-                // Simular envio de SMS (em produção, integrar com API de SMS)
-                console.log(`Código de verificação para ${phoneNumber}: ${this.smsCode}`);
-                
-                // Fechar modal atual e abrir modal de verificação
-                this.closeModal('phone-login-modal');
-                document.getElementById('sms-verification-modal').style.display = 'flex';
-                
-                // Iniciar contagem regressiva para reenvio
-                this.startCountdown();
-                
-                this.showToast('Código de verificação enviado por SMS', 'success');
-            },
-            
-            // Iniciar contagem regressiva para reenvio
-            startCountdown: function() {
-                const countdownEl = document.getElementById('countdown');
-                const resendEl = document.getElementById('resend-code');
-                let seconds = 60;
-                
-                countdownEl.textContent = seconds;
-                
-                const countdownInterval = setInterval(() => {
-                    seconds--;
-                    countdownEl.textContent = seconds;
-                    
-                    if (seconds <= 0) {
-                        clearInterval(countdownInterval);
-                        resendEl.innerHTML = 'Não recebeu o código? <a href="javascript:void(0)" onclick="CustomerPortal.resendCode()">Reenviar código</a>';
-                    }
-                }, 1000);
-            },
-            
-            // Reenviar código
-            resendCode: function() {
-                // Gerar novo código
-                this.smsCode = Math.floor(100000 + Math.random() * 900000);
-                
-                // Simular reenvio de SMS
-                console.log(`Novo código de verificação para ${this.phoneNumber}: ${this.smsCode}`);
-                
-                // Reiniciar contagem regressiva
-                document.getElementById('resend-code').innerHTML = 'Não recebeu o código? <span class="countdown" id="countdown">60</span>s para reenviar';
-                this.startCountdown();
-                
-                this.showToast('Código reenviado com sucesso', 'success');
-            },
-            
-            // Verificar código SMS
-            verifySMSCode: function() {
-                const enteredCode = document.getElementById('sms-code').value;
-                
-                if (!enteredCode || enteredCode.length !== 6) {
-                    this.showToast('Digite um código de 6 dígitos', 'error');
-                    return;
-                }
-                
-                if (parseInt(enteredCode) === this.smsCode) {
-                    // Código correto - fazer login
-                    const user = {
-                        id: 'phone_' + Date.now(),
-                        name: 'Usuário ' + this.phoneNumber,
-                        phone: this.phoneNumber,
-                        loginMethod: 'phone'
-                    };
-                    
-                    localStorage.setItem('customerPortal_user', JSON.stringify(user));
-                    this.currentUser = user;
-                    this.checkLoginStatus();
-                    this.closeModal('sms-verification-modal');
-                    this.init();
-                    this.showToast('Login realizado com sucesso!', 'success');
-                } else {
-                    this.showToast('Código incorreto. Tente novamente.', 'error');
-                }
-            },
-            
-            // Login com Google (simulado)
-            loginWithGoogle: function() {
-                // Simulação de login com Google
-                const user = {
-                    id: 'google_' + Date.now(),
-                    name: 'Usuário Google',
-                    email: 'usuario@gmail.com',
-                    loginMethod: 'google'
-                };
-                
-                localStorage.setItem('customerPortal_user', JSON.stringify(user));
-                this.currentUser = user;
-                this.checkLoginStatus();
-                this.init();
-                this.showToast('Login com Google realizado com sucesso!', 'success');
-            },
-            
-            // Logout
-            logout: function() {
-                localStorage.removeItem('customerPortal_user');
-                this.currentUser = null;
-                this.checkLoginStatus();
-                this.showToast('Logout realizado com sucesso', 'success');
-            },
-            
-            // Carregar produtos de todas as empresas
-            loadProducts: function() {
-                const systemData = JSON.parse(localStorage.getItem('systemControlPro_data') || '{}');
-                const productsContainer = document.getElementById('products-container');
-                productsContainer.innerHTML = '';
-                
-                // Coletar todos os produtos de todas as empresas
-                let allProducts = [];
-                for (const empresaId in systemData.produtos) {
-                    const empresa = (systemData.empresas || []).find(e => e.id == empresaId);
-                    if (empresa && empresa.status === 'active') {
-                        const produtos = systemData.produtos[empresaId] || [];
-                        produtos.forEach(p => {
-                            // Evitar duplicatas - verificar se produto já existe
-                            const existingIndex = allProducts.findIndex(prod => 
-                                prod.id === p.id && prod.empresaId === empresaId
-                            );
-                            
-                            if (existingIndex === -1) {
-                                allProducts.push({
-                                    ...p,
-                                    empresaId: empresaId,
-                                    empresaNome: empresa.nome,
-                                    empresaCodigo: empresa.codigo
-                                });
-                            }
-                        });
-                    }
-                }
-                
-                // Aplicar ordenação
-                allProducts = this.applySorting(allProducts);
-                
-                // Exibir produtos
-                allProducts.forEach(product => {
-                    const productCard = document.createElement('div');
-                    productCard.className = 'product-card';
-                    productCard.innerHTML = `
-                        <img src="${product.image || 'https://via.placeholder.com/250'}" alt="${product.nome}" class="product-image">
-                        <div class="product-info">
-                            <div class="product-company">${product.empresaNome} (${product.empresaCodigo})</div>
-                            <div class="product-name">${product.nome}</div>
-                            <div class="product-price">R$ ${product.preco.toFixed(2)}</div>
-                            <button class="add-to-cart" onclick="CustomerPortal.addToCart(${product.id}, ${product.empresaId})">
-                                <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
-                            </button>
-                        </div>
-                    `;
-                    productsContainer.appendChild(productCard);
-                });
-            },
+           init: async function() {
+  // 1) Seed/carrega base se necessário
+  await this.loadInitialData();
+
+  // 2) (opcional) verifica login por telefone/google, se existir no seu arquivo
+  this.checkLoginStatus?.();
+
+  // 3) monta a UI inicial
+  this.filterProducts();
+  this.loadCompaniesFilter();
+  this.loadCategoriesFilter();
+  this.loadCartFromStorage();
+  this.updateCartUI();
+  this.loadBestSellers();
+  this.setupSortingEvents?.();
+
+  // 4) busca em tempo real
+  document.getElementById('search-input')
+    ?.addEventListener('input', () => this.filterProducts());
+},
+
             
             // Aplicar ordenação aos produtos
             applySorting: function(products) {
@@ -965,6 +724,55 @@
                         return products;
                 }
             },
+
+            loadInitialData: async function() {
+  const STORAGE_KEY = 'systemControlPro_data';
+  const existing = localStorage.getItem(STORAGE_KEY);
+  if (existing) return;
+
+  try {
+    const res = await fetch('./empresas.json', { cache: 'no-cache' })
+;
+    const seed = await res.json();
+
+    const initial = {
+      empresas: seed.empresas || [],
+      usuarios: {},
+      produtos: {},
+      clientes: {},
+      orcamentos: {},
+      pedidos: {},
+      configuracoes: {},
+      _auditLogs: []
+    };
+
+    initial.empresas.forEach(emp => {
+      initial.usuarios[emp.id] = [{
+        id: 1, username: 'admin', password: 'admin123',
+        name: 'Administrador', role: 'admin', status: 'active',
+        email: emp.email || ''
+      }];
+      initial.produtos[emp.id] = [];
+      initial.clientes[emp.id] = [];
+      initial.orcamentos[emp.id] = [];
+      initial.pedidos[emp.id] = [];
+      initial.configuracoes[emp.id] = {
+        empresaId: emp.id,
+        metaMensal: 10000,
+        comissaoPercentual: 5,
+        metasPorUsuario: {},
+        comissaoPorUsuario: {}
+      };
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+    console.log('[cliente] seed carregada de empresas.json');
+  } catch (e) {
+    console.error('Falha ao carregar empresas.json', e);
+    alert('Erro ao carregar empresas.json no Portal do Cliente.');
+  }
+},
+
             
             // Obter empresa em destaque (rotativo por dia)
             getFeaturedCompany: function() {
@@ -1041,18 +849,23 @@
                     const productCard = document.createElement('div');
                     productCard.className = 'product-card';
                     productCard.innerHTML = `
-                        <img src="${product.image || 'https://via.placeholder.com/250'}" alt="${product.nome}" class="product-image">
-                        <div class="product-info">
-                            <div class="product-name">${product.nome}</div>
-                            <div class="product-price">R$ ${product.preco.toFixed(2)}</div>
-                            <div style="color: var(--primary-color); font-weight: bold;">
-                                <i class="fas fa-trophy"></i> ${product.sales} vendas
-                            </div>
-                            <button class="add-to-cart" onclick="CustomerPortal.addToCart(${product.id}, ${product.empresaId})">
-                                <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
-                            </button>
-                        </div>
-                    `;
+  <img src="${product.image || 'https://via.placeholder.com/250'}" alt="${product.nome}" class="product-image">
+  <div class="product-info">
+    <div class="product-company">${product.empresaNome} (${product.empresaCodigo})</div>
+    <div class="product-name">${product.nome}</div>
+    <div class="product-price">R$ ${product.preco.toFixed(2)}</div>
+
+    ${product.pricePolicy === 'margin' ? `
+      <div class="price-note">
+        Preço sujeito à confirmação do fornecedor. O valor pode sofrer oscilação.
+      </div>` : ''}
+
+    <button class="add-to-cart" onclick="CustomerPortal.addToCart(${product.id}, ${product.empresaId})">
+      <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+    </button>
+  </div>
+`;
+
                     bestSellersContainer.appendChild(productCard);
                 });
             },
@@ -1182,14 +995,17 @@
                     existingItem.quantity += 1;
                 } else {
                     this.cart.push({
-                        id: product.id,
-                        empresaId: empresaId,
-                        name: product.nome,
-                        price: product.preco,
-                        quantity: 1,
-                        image: product.image,
-                        empresa: (systemData.empresas || []).find(e => e.id == empresaId)?.nome || 'Desconhecida'
-                    });
+  id: product.id,
+  empresaId: empresaId,
+  name: product.nome,
+  price: product.preco,
+  quantity: 1,
+  image: product.image,
+  empresa: (systemData.empresas || []).find(e => e.id == empresaId)?.nome || 'Desconhecida',
+  pricePolicy: product.pricePolicy || 'margin',            // <- guarda a política
+  needsPriceConfirm: (product.pricePolicy === 'margin')    // <- flag para o carrinho/checkout
+});
+
                 }
                 
                 this.saveCartToStorage();
@@ -1297,6 +1113,10 @@
                 event.currentTarget.classList.add('selected');
             },
             
+			
+		 
+			
+			
             // Finalizar pedido
             finalizeOrder: function() {
                 const name = document.getElementById('customer-name').value;
@@ -1479,6 +1299,13 @@
                 CustomerPortal.filterProducts();
             });
         };
+
+        
     </script>
+    <script src="core-storage.js"></script>
+<script src="main.js"></script>
+<script src="portalcliente.js"></script>
+</body>
+
 </body>
 </html>

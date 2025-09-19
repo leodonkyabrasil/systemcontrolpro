@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Control Pro — Administração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f9fc; --card:#fff; --muted:#6b7280; --text:#111827;
+    --primary:#0f172a; --accent:#2563eb; --ok:#16a34a; --warn:#f59e0b; --err:#dc2626;
+    --radius:12px; --shadow:0 8px 24px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:var(--text)}
+  .toast{position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transition:.3s;z-index:9999}
+  .toast.show{opacity:1}
+
+  /* LOGIN */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#111827,#0b1226)}
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;width:100%;max-width:460px}
+  .card h2{margin:0 0 8px;color:#0f172a}
+  label{display:block;font-weight:600;margin:10px 0 6px}
+  input,select,button{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;font:inherit}
+  input:focus{outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.15);border-color:#c7d2fe}
+  .btn{cursor:pointer;border:none}
+  .btn-primary{background:var(--accent);color:#fff}
+  .muted{color:var(--muted);font-size:13px}
+
+  /* APP */
+  header{background:linear-gradient(135deg,#111827,#0b1226);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:18px;margin:0}
+  header .right{display:flex;gap:10px}
+  .btn-ghost{background:#ffffff22;color:#fff;border:1px solid #ffffff44;border-radius:10px;padding:10px 12px;cursor:pointer}
+  .wrap{max-width:1200px;margin:20px auto;padding:0 16px}
+  .grid{display:grid;gap:16px}
+  @media(min-width:900px){.grid.cols-2{grid-template-columns:1.2fr .8fr}}
+  .panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  h2{margin:0 0 10px}
+  .row{display:grid;gap:10px}
+  .row-2{grid-template-columns:1fr 1fr}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px}
+  th{background:#f3f4f6}
+  .actions{display:flex;gap:8px}
+  .badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px}
+  .badge.ok{background:#e8f7ef;color:#0f7a3b}
+  .badge.warn{background:#fff4e5;color:#8a5a00}
+  .badge.err{background:#ffecec;color:#8a0012}
+
+  .emp-row.selected { background:#eef2ff; }
+
+
+</style>
+</head>
+<body>
+
+
+<!-- BLOCO 1: impedir seed e pré-carregar empresas (LOGIN) -->
+<script>
+  // 1) Desativa qualquer seed que recrie "Empresa Demonstração" no login
+  window.seedIfEmptyVendor = async () => {};
+  window.seedIfEmpty = async () => {};
+
+  // 2) (Opcional) Desregistrar service worker pra não servir cache velho
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
+  }
+
+  // 3) Pré-carrega empresas.json e coloca no localStorage ANTES de outros scripts
+  window.SCP = window.SCP || {};
+  window.SCP_EMPRESAS_PROMISE = (async () => {
+    try {
+      const r = await fetch('/empresas.json?ts=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      const empresas = Array.isArray(data.empresas) ? data.empresas : [];
+      if (empresas.length) {
+        localStorage.setItem('empresas', JSON.stringify(empresas));
+        window.SCP_EMPRESAS = empresas;
+        return empresas;
+      }
+    } catch (e) {
+      console.warn('LOGIN: fetch empresas falhou:', e);
+    }
+    // fallback: o que já tiver no localStorage
+    try {
+      const ls = JSON.parse(localStorage.getItem('empresas') || '[]');
+      window.SCP_EMPRESAS = ls;
+      return ls;
+    } catch { return []; }
+  })();
+</script>
+
+
+
+<script>window.renderizarTabela = window.renderizarTabela || function(){ /*stub*/ };</script>
+
+
+
+<!-- LOGIN -->
+<section id="login-view" class="login-wrap">
+  <div class="card">
+    <h2>Administração — Login</h2>
+    <p class="muted">Apenas para cadastro/edição de <b>Empresas</b> e <b>Usuários</b>. (Portal do vendedor é o <code>index.html</code>.)</p>
+    <!-- onsubmit amarrado para garantir funcionamento -->
+    <form id="login-form" onsubmit="return doAdminLogin(event)">
+      <label>Usuário</label>
+      <input id="adm_user" placeholder="sysadmin" required>
+      <label>Senha</label>
+      <input id="adm_pass" type="password" placeholder="••••••••" required>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input id="remember" type="checkbox" style="width:auto"> Lembrar-me
+      </label>
+      <button class="btn btn-primary" type="submit" style="margin-top:12px">Entrar</button>
+      <p class="muted" style="margin-top:10px">Credenciais padrão (primeiro acesso): <b>sysadmin / adm123</b></p>
+    </form>
+  </div>
+</section>
+
+
+
+
+<!-- APP -->
+<section id="app" style="display:none">
+  <header>
+    <h1>System Control Pro — Administração</h1>
+    <div class="right">
+      <button id="seed-reset" class="btn-ghost" title="Zera o storage e recarrega do empresas.json">Recarregar Seed</button>
+      <button id="logout" class="btn-ghost">Sair</button>
+      <button id="btn-export-empresas" class="btn">Exportar empresas.json</button>
+    </div>
+  </header>
+
+  <div class="wrap grid cols-2">
+    <!-- EMPRESAS -->
+    <section class="panel">
+      <h2>Empresas</h2>
+      <p class="muted">Cadastre/edite empresas. Ao criar, um usuário <b>admin</b> (admin/admin123) é gerado automaticamente.</p>
+
+      <div class="row row-2" style="margin:10px 0">
+        <input id="empresa-search" placeholder="Buscar por nome/CNPJ/código...">
+        <div class="actions" style="justify-content:flex-end">
+          <button id="add-empresa" class="btn btn-primary">Nova empresa</button>
+        </div>
+      </div>
+
+      <table id="empresas-table">
+        <thead>
+          <tr><th>ID</th><th>Nome</th><th>CNPJ</th><th>Plano</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- USUÁRIOS da empresa selecionada -->
+    <section class="panel">
+      <h2>Usuários da empresa selecionada</h2>
+      <p class="muted" id="empresa-atual">Nenhuma empresa selecionada.</p>
+
+      <div class="actions" style="justify-content:flex-end;margin-bottom:8px;gap:8px">
+  <button id="reset-admin" class="btn" disabled>Resetar senha do admin</button>
+  <button id="add-user" class="btn btn-primary" disabled>Novo usuário</button>
+</div>
+
+
+      <table id="usuarios-table">
+        <thead>
+          <tr><th>Usuário</th><th>Nome</th><th>Perfil</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody><tr><td colspan="5" class="muted">Selecione uma empresa na lista à esquerda.</td></tr></tbody>
+      </table>
+    </section>
+
+    <!-- AUDITORIA -->
+    <section class="panel" style="grid-column:1/-1">
+      <h2>Auditoria</h2>
+      <table id="audit-table">
+        <thead><tr><th>Quando</th><th>Empresa</th><th>Ação</th><th>Detalhes</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted">Log das ações realizadas no painel de administração.</p>
+    </section>
+  </div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ===== CHAVES ===== */
+const STORAGE_KEY = 'systemControlPro_data';
+const ADMIN_ACCOUNT_KEY = 'scp_admin_account';
+const ADMIN_SESSION_KEY = 'scp_admin_session';
+
+/* ===== STATE COMPARTILHADO ===== */
+let state = {
+  empresas: [],
+  usuarios: {}, produtos: {}, clientes: {}, orcamentos: {}, pedidos: {},
+  configuracoes: {}, _auditLogs: []
+};
+
+const $ = s => document.querySelector(s);
+const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); };
+const nowISO = () => new Date().toISOString();
+
+/* ===== PERSISTÊNCIA ===== */
+function loadAll(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return false;
+  try{
+    state = JSON.parse(raw);
+    state.empresas ||= []; state.usuarios ||= {}; state.produtos ||= {};
+    state.clientes ||= {}; state.orcamentos ||= {}; state.pedidos ||= {};
+    state.configuracoes ||= {}; state._auditLogs ||= [];
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+function saveAll(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  syncToSCPMirror(); // <-- espelha para o formato que o login entende
+}
+
+
+// Espelha o storage do Admin (systemControlPro_data) para o formato "plano" do SCP
+function syncToSCPMirror(){
+  try{
+    // 1) empresas (array plano)
+    const empresasPlano = state.empresas.map(e => ({
+      id: e.id,
+      nome: e.nome,
+      cnpj: e.cnpj || '',
+      email: e.email || '',
+      telefone: e.telefone || '',
+      endereco: e.endereco || '',
+      plano: e.plano || 'basic',
+      status: e.status || 'active',
+      codigo: e.codigo || ''
+    }));
+    window.SCP?.setData('empresas', empresasPlano);
+
+    // 2) usuarios (array plano, com empresaId)
+    const usuariosPlano = [];
+    Object.keys(state.usuarios||{}).forEach(eid=>{
+      (state.usuarios[eid]||[]).forEach(u=>{
+        usuariosPlano.push({
+          id: u.id,
+          empresaId: Number(eid),
+          username: u.username,
+          password: u.password,
+          role: u.role || 'admin',
+          ativo: (u.status||'active') !== 'inactive'
+        });
+      });
+    });
+    window.SCP?.setData('usuarios', usuariosPlano);
+  }catch(e){
+    console.warn('syncToSCPMirror falhou', e);
+  }
+}
+
+
+/* ===== SEED INICIAL ===== */
+async function seedIfEmpty(){
+  // carrega o que tiver
+  const hadData = loadAll();
+  // só pula o seed se JÁ houver empresas válidas no storage
+  if (hadData && Array.isArray(state.empresas) && state.empresas.length > 0) return;
+
+  try{
+    const res = await fetch('/empresas.json', { cache: 'no-cache' });
+    const data = await res.json();
+    state.empresas = data.empresas || [];
+    state.usuarios = {}; state.produtos={}; state.clientes={};
+    state.orcamentos={}; state.pedidos={}; state.configuracoes={}; state._auditLogs=[];
+
+    // cria ADMIN padrão por empresa
+    state.empresas.forEach(emp=>{
+      state.usuarios[emp.id] = [
+        { id:1, username:'admin', password:'admin123', name:'Administrador', role:'admin', email:emp.email, status:'active' }
+      ];
+      state.configuracoes[emp.id] = { empresaId: emp.id, metaMensal: 10000, comissaoPercentual: 5 };
+    });
+
+    saveAll(); // salva em systemControlPro_data e chama syncToSCPMirror()
+    console.log('Seed carregado de empresas.json (admin)');
+  } catch(e) {
+    console.error('Falha ao carregar empresas.json', e);
+    alert('Erro ao carregar empresas.json. Confirme se está na mesma pasta do admin.html.');
+  }
+}
+
+
+/* ===== AUDITORIA ===== */
+function audit(empresaId, action, details){
+  const emp = state.empresas.find(e=>e.id===empresaId);
+  state._auditLogs.unshift({ ts: nowISO(), empresa: emp? `${emp.nome} (#${emp.id})`:'-', action, details });
+  saveAll(); renderAudit();
+}
+
+/* ===== ADMIN AUTH (login/sessão) ===== */
+function ensureDefaultAdmin(){
+  if(!localStorage.getItem(ADMIN_ACCOUNT_KEY)){
+    localStorage.setItem(ADMIN_ACCOUNT_KEY, JSON.stringify({ username:'sysadmin', password:'adm123' }));
+  }
+}
+function getAdminAccount(){ try{ return JSON.parse(localStorage.getItem(ADMIN_ACCOUNT_KEY)) }catch{return null} }
+function saveAdminSession(username, remember){
+  const ttl = remember ? (30*24*60*60*1000) : (12*60*60*1000);
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username, ts: Date.now(), ttl }));
+}
+function loadAdminSession(){
+  const raw = localStorage.getItem(ADMIN_SESSION_KEY); if(!raw) return null;
+  try{
+    const s = JSON.parse(raw);
+    if(!s.ts || (Date.now()-s.ts) > s.ttl){ localStorage.removeItem(ADMIN_SESSION_KEY); return null; }
+    return s;
+  }catch{ localStorage.removeItem(ADMIN_SESSION_KEY); return null; }
+}
+function clearAdminSession(){ localStorage.removeItem(ADMIN_SESSION_KEY); }
+
+/* ===== UI: EMPRESAS / USUÁRIOS / AUDIT ===== */
+let selectedEmpresaId = null;
+
+function renderEmpresas(){
+  const q = ($('#empresa-search')?.value||'').toLowerCase();
+  const rows = state.empresas
+    .filter(e=> !q || [e.nome,e.cnpj,e.codigo].some(v=>String(v||'').toLowerCase().includes(q)))
+    .map(e=>`<tr data-id="${e.id}" class="emp-row">
+      <td>${e.id}</td>
+      <td>${e.nome}</td>
+      <td>${e.cnpj||''}</td>
+      <td>${e.plano||''}</td>
+      <td><span class="badge ${e.status==='active'?'ok':e.status==='pending'?'warn':'err'}">${e.status||'active'}</span></td>
+      <td class="actions">
+  <button class="btn" data-act="edit">Editar</button>
+  <button class="btn" data-act="del">Excluir</button>
+</td>
+        
+      </td>
+    </tr>`).join('');
+
+  $('#empresas-table tbody').innerHTML = rows || '<tr><td colspan="6">Nenhuma empresa</td></tr>';
+
+  // Se nada selecionado ainda, seleciona a 1ª empresa automaticamente
+  if (!selectedEmpresaId) {
+    const first = document.querySelector('#empresas-table tbody tr.emp-row');
+    if (first) {
+      selectedEmpresaId = Number(first.dataset.id);
+      renderUsuarios();
+    }
+  }
+
+  // Destacar a linha selecionada
+  document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(tr=>{
+    tr.classList.toggle('selected', Number(tr.dataset.id)===selectedEmpresaId);
+  });
+}
+
+function renderUsuarios(){
+  const titulo = $('#empresa-atual');
+  const tbody = $('#usuarios-table tbody');
+  const btnAdd = $('#add-user');
+  const btnReset = $('#reset-admin');
+
+  if(!selectedEmpresaId){
+    titulo.textContent = 'Nenhuma empresa selecionada.';
+    btnAdd.disabled = true;
+    if (btnReset) btnReset.disabled = true;
+    tbody.innerHTML = '<tr><td colspan="5" class="muted">Selecione uma empresa à esquerda.</td></tr>';
+    return;
+  }
+  const emp = state.empresas.find(e=>e.id===selectedEmpresaId);
+  titulo.innerHTML = `Empresa selecionada: <b>${emp.nome}</b> (#${emp.id})`;
+  btnAdd.disabled = false;
+  if (btnReset) btnReset.disabled = false;
+
+  const list = state.usuarios[selectedEmpresaId] || [];
+  const rows = list.map(u=>`<tr data-id="${u.id}">
+    <td>${u.username}</td>
+    <td>${u.name||''}</td>
+    <td>${u.role||''}</td>
+    <td>${u.status||'active'}</td>
+    <td class="actions">
+      <button class="btn" data-act="u-edit">Editar</button>
+      <button class="btn" data-act="u-del">Excluir</button>
+    </td>
+  </tr>`).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="5">Sem usuários nesta empresa</td></tr>';
+}
+
+
+
+function renderAudit(){
+  const rows = (state._auditLogs||[]).map(a=>`<tr>
+    <td>${new Date(a.ts).toLocaleString('pt-BR')}</td>
+    <td>${a.empresa}</td>
+    <td>${a.action}</td>
+    <td><pre style="white-space:pre-wrap;margin:0">${a.details||''}</pre></td>
+  </tr>`).join('');
+  $('#audit-table tbody').innerHTML = rows || '<tr><td colspan="4" class="muted">Sem eventos</td></tr>';
+}
+
+/* ===== AÇÕES ===== */
+function addEmpresa(){
+  const nome = prompt('Nome da empresa:'); if(!nome) return;
+  const codigo = prompt('Código interno (ex.: 0003):')||'';
+  const cnpj = prompt('CNPJ:')||'';
+  const email = prompt('E-mail:')||'';
+  const plano = prompt('Plano (basic/premium):','basic')||'basic';
+  const status = 'active';
+  const id = (state.empresas.reduce((m,e)=>Math.max(m,e.id),0)||0)+1;
+
+  const emp = {id,nome,cnpj,endereco:'',telefone:'',email,plano,dataCriacao:nowISO(),status,codigo,logo:null};
+  state.empresas.push(emp);
+
+  // cria admin padrão para a nova empresa
+  state.usuarios[id] = [
+    { id:1, username:'admin', password:'admin123', name:'Administrador', role:'admin', email, status:'active' }
+  ];
+  state.configuracoes[id] = { empresaId:id, metaMensal:10000, comissaoPercentual:5 };
+
+  saveAll();
+  audit(id,'empresa.create', JSON.stringify({id,nome,codigo}));
+  toast('Empresa criada. Usuário padrão da empresa: admin / admin123');
+  renderEmpresas();
+}
+
+function editEmpresa(id){
+  const emp = state.empresas.find(e=>e.id===id); if(!emp) return;
+  const nome = prompt('Nome da empresa:', emp.nome)||emp.nome;
+  const codigo = prompt('Código interno:', emp.codigo||'')||emp.codigo||'';
+  const cnpj = prompt('CNPJ:', emp.cnpj||'')||emp.cnpj||'';
+  const email = prompt('E-mail:', emp.email||'')||emp.email||'';
+  const plano = prompt('Plano (basic/premium):', emp.plano||'basic')||emp.plano||'basic';
+  const status = prompt('Status (active/inactive/pending):', emp.status||'active')||emp.status||'active';
+
+  Object.assign(emp,{nome,codigo,cnpj,email,plano,status});
+  saveAll();
+  audit(id,'empresa.update', JSON.stringify({id,nome}));
+  renderEmpresas();
+  if(selectedEmpresaId===id) renderUsuarios();
+}
+
+function delEmpresa(id){
+  if(!confirm('Excluir empresa e TODOS os dados ligados a ela (usuários, produtos, clientes, etc.)?')) return;
+  state.empresas = state.empresas.filter(e=>e.id!==id);
+  delete state.usuarios[id]; delete state.produtos[id]; delete state.clientes[id];
+  delete state.orcamentos[id]; delete state.pedidos[id]; delete state.configuracoes[id];
+  saveAll();
+  audit(id,'empresa.delete', JSON.stringify({id}));
+  if(selectedEmpresaId===id) selectedEmpresaId=null;
+  renderEmpresas(); renderUsuarios();
+}
+
+function addUser(){
+  if(!selectedEmpresaId){ toast('Selecione uma empresa'); return; }
+  const list = state.usuarios[selectedEmpresaId] ||= [];
+  const id = (list.reduce((m,u)=>Math.max(m,u.id),0)||0)+1;
+
+  const username = prompt('Usuário (login):'); if(!username) return;
+  const name = prompt('Nome completo:')||username;
+  const password = prompt('Senha:')||'senha123';
+  const role = prompt('Perfil (admin/seller):','admin')||'admin';
+  const email = prompt('E-mail (opcional):')||'';
+  const status = 'active';
+
+  list.push({id,username,name,password,role,email,status});
+  saveAll();
+  audit(selectedEmpresaId,'user.create', JSON.stringify({username,role}));
+  toast('Usuário criado');
+  renderUsuarios();
+}
+document.getElementById('reset-admin').addEventListener('click', ()=>{
+  if(!selectedEmpresaId){ toast('Selecione uma empresa'); return; }
+  const list = state.usuarios[selectedEmpresaId] ||= [];
+  // tenta achar um admin 'admin'; se não houver, pega qualquer admin
+  let admin = list.find(u=>u.username==='admin' && u.role==='admin') || list.find(u=>u.role==='admin');
+  if(!admin){ alert('Nenhum usuário admin encontrado nesta empresa.'); return; }
+
+  const nova = prompt(`Nova senha para ${admin.username}:`, 'admin123');
+  if(!nova) return;
+
+  admin.password = nova;
+  saveAll();
+  audit(selectedEmpresaId, 'user.reset_password', JSON.stringify({username: admin.username}));
+  toast('Senha do admin redefinida');
+});
+
+function editUser(uid){
+  const list = state.usuarios[selectedEmpresaId]||[];
+  const u = list.find(x=>x.id===uid); if(!u) return;
+
+  const name = prompt('Nome completo:', u.name||'')||u.name||'';
+  const password = prompt('Nova senha (deixe vazio p/ manter):',''); if(password) u.password=password;
+  const role = prompt('Perfil (admin/seller):', u.role||'admin')||u.role||'admin';
+  const status = prompt('Status (active/inactive):', u.status||'active')||u.status||'active';
+
+  Object.assign(u,{name,role,status});
+  saveAll();
+  audit(selectedEmpresaId,'user.update', JSON.stringify({username:u.username}));
+  toast('Usuário atualizado');
+  renderUsuarios();
+}
+
+function delUser(uid){
+  const list = state.usuarios[selectedEmpresaId]||[];
+  const u = list.find(x=>x.id===uid); if(!u) return;
+  if(!confirm(`Excluir usuário ${u.username}?`)) return;
+
+  state.usuarios[selectedEmpresaId] = list.filter(x=>x.id!==uid);
+  saveAll();
+  audit(selectedEmpresaId,'user.delete', JSON.stringify({username:u.username}));
+  toast('Usuário removido');
+  renderUsuarios();
+}
+
+function exportEmpresas(){
+  // pega do storage do Admin (fonte da verdade do painel)
+  const dump = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  // se por algum motivo não houver, cai no que está em memória
+  const empresas = dump.empresas || state.empresas || [];
+
+  const blob = new Blob(
+    [JSON.stringify({ empresas }, null, 2)],
+    { type: 'application/json' }
+  );
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'empresas.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+  toast('empresas.json exportado');
+}
+
+
+/* ===== EVENTOS ===== */
+function bindUI(){
+  // EMPRESAS
+  document.getElementById('empresa-search').addEventListener('input', renderEmpresas);
+  document.getElementById('add-empresa').addEventListener('click', addEmpresa);
+  document.getElementById('empresas-table').addEventListener('click', (e)=>{
+  const tr = e.target.closest('tr.emp-row'); if(!tr) return;
+  const id = Number(tr.dataset.id);
+
+  if(e.target.dataset.act==='edit'){ editEmpresa(id); return; }
+  if(e.target.dataset.act==='del'){ delEmpresa(id); return; }
+
+  // Seleciona a empresa ao clicar na linha
+  selectedEmpresaId = id;
+
+  // Atualiza destaque visual
+  document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(row=>{
+    row.classList.toggle('selected', Number(row.dataset.id)===id);
+  });
+
+  renderUsuarios();
+});
+
+  // USUÁRIOS
+  document.getElementById('add-user').addEventListener('click', addUser);
+  document.getElementById('usuarios-table').addEventListener('click', (e)=>{
+    const tr = e.target.closest('tr'); if(!tr) return;
+    const uid = Number(tr.dataset.id);
+    if(e.target.dataset.act==='u-edit'){ editUser(uid); }
+    if(e.target.dataset.act==='u-del'){ delUser(uid); }
+  });
+
+  // SEED RESET
+  document.getElementById('seed-reset').addEventListener('click', async ()=>{
+    if(!confirm('Isto APAGA os dados locais e recarrega do empresas.json. Continuar?')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    await seedIfEmpty();
+    selectedEmpresaId = null;
+    renderEmpresas(); renderUsuarios(); renderAudit();
+    toast('Seed recarregado do empresas.json');
+  });
+
+    // EXPORTAR EMPRESAS.JSON
+  document.getElementById('btn-export-empresas')
+    .addEventListener('click', exportEmpresas);
+
+
+  // LOGOUT
+  document.getElementById('logout').addEventListener('click', ()=>{
+    clearAdminSession();
+    document.getElementById('app').style.display='none';
+    document.getElementById('login-view').style.display='flex';
+  });
+}
+
+
+
+/* ===== LOGIN: handler direto no form (garante mesmo se algo falhar) ===== */
+function doAdminLogin(ev){
+  ev.preventDefault();
+  try {
+    const u = document.getElementById('adm_user').value.trim();
+    const p = document.getElementById('adm_pass').value.trim();
+    const remember = document.getElementById('remember').checked;
+
+    // garantir credencial padrão
+    ensureDefaultAdmin();
+    const acc = getAdminAccount();
+    console.log('[admin-login]', {u, ok: !!acc});
+
+    if (acc && u === acc.username && p === acc.password) {
+      saveAdminSession(u, remember);
+      showApp();
+      return false;
+    } else {
+      alert('Usuário ou senha inválidos.');
+      return false;
+    }
+  } catch (e) {
+    console.error('Falha no doAdminLogin:', e);
+    alert('Erro inesperado no login. Veja o Console (F12).');
+    return false;
+  }
+}
+
+/* ===== LOGIN FLOW auxiliar (auto-login por sessão válida) ===== */
+function setupLogin(){
+  ensureDefaultAdmin();
+  const session = loadAdminSession();
+  if(session){ showApp(); }
+}
+
+/* ===== Mostrar APP ===== */
+function showApp(){
+  document.getElementById('login-view').style.display='none';
+  document.getElementById('app').style.display='block';
+  bindUI();
+  renderEmpresas(); renderUsuarios(); renderAudit();
+}
+
+/* ===== BOOT ===== */
+(async function(){
+  await seedIfEmpty();  // garante dados base
+  loadAll();            // carrega na memória
+  syncToSCPMirror();     // <<< NOVO: espelha para SCP (empresas/usuarios)
+  setupLogin();         // se tiver sessão válida, entra direto
+})();
+
+ 
+
+ 
+
+</script>
+<script>window.SCP_DEMO_SEED = false;</script>
+
+<script src="core-storage.js"></script>
+<!-- ===== Configuração Fiscal (NF-e/NFS-e) — INÍCIO ===== -->
+<style>
+  /* Estilos mínimos do modal */
+  .fx-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
+  .fx-modal{background:#fff;max-width:860px;width:96%;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .fx-head{padding:16px 20px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+  .fx-body{padding:16px 20px}
+  .fx-row{display:flex;gap:12px;flex-wrap:wrap}
+  .fx-col{flex:1;min-width:220px}
+  .fx-foot{padding:12px 20px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end}
+  .fx-label{font-size:.9rem;margin-bottom:6px;color:#222}
+  .fx-input, .fx-select{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;background:#fff}
+  .fx-btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+  .fx-btn-primary{background:#1a73e8;color:#fff}
+  .fx-btn-ghost{background:#f4f4f4;color:#333}
+  .fx-floating-btn{position:fixed;right:18px;bottom:18px;background:#1a73e8;color:#fff;border:none;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.2);padding:12px 16px;cursor:pointer;z-index:9998}
+</style>
+
+<button id="fx-open-btn" class="fx-floating-btn" title="Configuração Fiscal (NF)">
+  ⚙️ Config Fiscal
+</button>
+
+<div id="fx-backdrop" class="fx-modal-backdrop" aria-hidden="true">
+  <div class="fx-modal" role="dialog" aria-modal="true" aria-labelledby="fx-title">
+    <div class="fx-head">
+      <h3 id="fx-title" style="margin:0">Faturamento Fiscal (NF-e/NFS-e)</h3>
+      <button id="fx-close-x" class="fx-btn fx-btn-ghost">✕</button>
+    </div>
+    <div class="fx-body">
+      <div class="fx-row">
+        <div class="fx-col">
+          <label class="fx-label">Ativar emissão oficial</label>
+          <select id="fx-enabled" class="fx-select">
+            <option value="false">Desativado</option>
+            <option value="true">Ativado</option>
+          </select>
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">Provedor</label>
+          <select id="fx-provider" class="fx-select">
+            <option value="">Selecione…</option>
+            <option value="nfeio">NFe.io</option>
+            <option value="enotas">eNotas</option>
+            <option value="plugnotas">Plugnotas</option>
+            <option value="focus">Focus NFe</option>
+          </select>
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">Ambiente</label>
+          <select id="fx-amb" class="fx-select">
+            <option value="homolog">Homologação</option>
+            <option value="producao">Produção</option>
+          </select>
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">Regime Tributário</label>
+          <select id="fx-regime" class="fx-select">
+            <option value="mei">MEI</option>
+            <option value="simples_nacional">Simples Nacional</option>
+            <option value="normal">Regime Normal</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fx-row" style="margin-top:10px">
+        <div class="fx-col">
+          <label class="fx-label">API Token do Provedor</label>
+          <input id="fx-token" type="password" class="fx-input" placeholder="Cole aqui o token/secret">
+        </div>
+        <div class="fx-col" style="max-width:240px">
+          <label class="fx-label">Auto emitir ao aprovar?</label>
+          <select id="fx-auto" class="fx-select">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fx-row" style="margin-top:10px">
+        <div class="fx-col">
+          <label class="fx-label">CFOP dentro do estado</label>
+          <input id="fx-cfop-in" class="fx-input" value="5102">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">CFOP fora do estado</label>
+          <input id="fx-cfop-out" class="fx-input" value="6102">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">CST/CSOSN padrão</label>
+          <input id="fx-csosn" class="fx-input" value="102">
+        </div>
+      </div>
+      <div class="fx-row" style="margin-top:10px">
+        <div class="fx-col" style="max-width:160px">
+          <label class="fx-label">UF da empresa</label>
+          <input id="fx-uf" class="fx-input" value="SP" maxlength="2">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">ICMS dentro (%)</label>
+          <input id="fx-icms-intra" class="fx-input" type="number" step="0.01" value="12">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">ICMS fora (%)</label>
+          <input id="fx-icms-inter" class="fx-input" type="number" step="0.01" value="18">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">PIS (%)</label>
+          <input id="fx-pis" class="fx-input" type="number" step="0.01" value="0.65">
+        </div>
+        <div class="fx-col">
+          <label class="fx-label">COFINS (%)</label>
+          <input id="fx-cofins" class="fx-input" type="number" step="0.01" value="3.0">
+        </div>
+      </div>
+
+      <div class="fx-row" style="margin-top:10px">
+        <div class="fx-col" style="max-width:260px">
+          <label class="fx-label">Calcular tributos no PDF interno?</label>
+          <select id="fx-calc-interno" class="fx-select">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fx-row" style="margin-top:10px">
+        <div class="fx-col">
+          <label class="fx-label">Certificado A1 (.pfx/.p12) — se o provedor exigir</label>
+          <input id="fx-a1" type="file" class="fx-input" accept=".pfx,.p12">
+        </div>
+        <div class="fx-col" style="max-width:260px">
+          <label class="fx-label">Senha do certificado</label>
+          <input id="fx-a1-pass" type="password" class="fx-input" placeholder="Senha do PFX">
+        </div>
+      </div>
+    </div>
+    <div class="fx-foot">
+      <button id="fx-cancel" class="fx-btn fx-btn-ghost">Cancelar</button>
+      <button id="fx-save" class="fx-btn fx-btn-primary">Salvar Configurações</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== util =====
+  function toast(msg){ try{ alert(msg); }catch(e){} }
+
+  function resolveEmpresaId(){
+    try{
+      const s = JSON.parse(sessionStorage.getItem('scp_session')||'null');
+      if (s && s.empresaId) return s.empresaId;
+    }catch(e){}
+    try{
+      const emps = (window.SCP && SCP.getData('empresas')) || [];
+      if (Array.isArray(emps) && emps.length) return emps[0].id;
+    }catch(e){}
+    return 1;
+  }
+
+  async function readFileAsDataURL(file){
+    return new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // ===== UI refs =====
+  const openBtn = document.getElementById('fx-open-btn');
+  const backdrop = document.getElementById('fx-backdrop');
+  const closeX   = document.getElementById('fx-close-x');
+  const cancel   = document.getElementById('fx-cancel');
+  const saveBtn  = document.getElementById('fx-save');
+
+  function openModal(){ backdrop.style.display = 'flex'; }
+  function closeModal(){ backdrop.style.display = 'none'; }
+
+  // ===== preencher ao abrir =====
+  function fillForm(){
+    if (!window.SCP){ toast('Storage não pronto'); return; }
+    const empresaId = resolveEmpresaId();
+    const fx = SCP._getFiscalCfg(empresaId);
+
+    document.getElementById('fx-enabled').value = String(!!fx.enabled);
+    document.getElementById('fx-provider').value = fx.provider || '';
+    document.getElementById('fx-amb').value = fx.ambiente || 'homolog';
+    document.getElementById('fx-regime').value = fx.regime || 'mei';
+    document.getElementById('fx-token').value = fx.apiToken || '';
+    document.getElementById('fx-auto').value = String(!!fx.autoEmitOnApprove);
+    document.getElementById('fx-cfop-in').value = fx.cfopDentro || '5102';
+    document.getElementById('fx-cfop-out').value = fx.cfopFora || '6102';
+    document.getElementById('fx-csosn').value = fx.cst_csosn || '102';
+        document.getElementById('fx-uf').value = fx.uf || 'SP';
+    document.getElementById('fx-icms-intra').value = fx.aliqICMS_intra ?? 12;
+    document.getElementById('fx-icms-inter').value = fx.aliqICMS_inter ?? 18;
+    document.getElementById('fx-pis').value = fx.aliqPIS ?? 0.65;
+    document.getElementById('fx-cofins').value = fx.aliqCOFINS ?? 3.0;
+    document.getElementById('fx-calc-interno').value = String(!!fx.calcularTributosInternos);
+
+    document.getElementById('fx-a1').value = ''; // nunca reexibe arquivo
+    document.getElementById('fx-a1-pass').value = fx.certificadoSenha || '';
+  }
+
+  async function saveForm(){
+    try{
+      const empresaId = resolveEmpresaId();
+      const old = SCP._getFiscalCfg(empresaId);
+      const fx = {
+        enabled: document.getElementById('fx-enabled').value === 'true',
+        provider: document.getElementById('fx-provider').value || '',
+        ambiente: document.getElementById('fx-amb').value || 'homolog',
+        regime: document.getElementById('fx-regime').value || 'mei',
+        apiToken: (document.getElementById('fx-token').value || '').trim(),
+        autoEmitOnApprove: document.getElementById('fx-auto').value === 'true',
+        cfopDentro: (document.getElementById('fx-cfop-in').value || '5102').trim(),
+        cfopFora: (document.getElementById('fx-cfop-out').value || '6102').trim(),
+        cst_csosn: (document.getElementById('fx-csosn').value || '102').trim(),
+        uf: (document.getElementById('fx-uf').value || 'SP').trim().toUpperCase(),
+        aliqICMS_intra: Number(document.getElementById('fx-icms-intra').value || 12),
+        aliqICMS_inter: Number(document.getElementById('fx-icms-inter').value || 18),
+        aliqPIS: Number(document.getElementById('fx-pis').value || 0.65),
+        aliqCOFINS: Number(document.getElementById('fx-cofins').value || 3.0),
+        calcularTributosInternos: document.getElementById('fx-calc-interno').value === 'true',
+        certificadoA1: old.certificadoA1,
+        certificadoSenha: document.getElementById('fx-a1-pass').value || ''
+      };
+
+      const a1Input = document.getElementById('fx-a1');
+      if (a1Input?.files?.length) {
+        fx.certificadoA1 = await readFileAsDataURL(a1Input.files[0]);
+      }
+
+      SCP._saveFiscalCfg(empresaId, fx);
+      toast('Configurações fiscais salvas.');
+      closeModal();
+    }catch(e){
+      console.error(e);
+      toast('Falha ao salvar configurações.');
+    }
+  }
+
+  // ===== eventos =====
+  openBtn.addEventListener('click', ()=>{ fillForm(); openModal(); });
+  closeX.addEventListener('click', closeModal);
+  cancel.addEventListener('click', closeModal);
+  saveBtn.addEventListener('click', saveForm);
+
+})();
+
+
+</script>
+<!-- ===== Configuração Fiscal (NF-e/NFS-e) — FIM ===== -->
+
+    ...
+    <!-- aqui termina seu HTML normal -->
+    
+    
+     
+   <script>
+(async () => {
+  async function carregarEmpresas() {
+    try {
+      const resp = await fetch('/empresas.json?ts=' + Date.now(), { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (data && Array.isArray(data.empresas)) {
+        localStorage.setItem('empresas', JSON.stringify(data.empresas));
+        return data.empresas;
+      }
+    } catch (e) {
+      console.warn('Não consegui carregar /empresas.json:', e);
+    }
+    // Fallbacks
+    const ls = localStorage.getItem('empresas');
+    if (ls) { try { return JSON.parse(ls); } catch {} }
+    return [{
+      id: 1, nome: 'Empresa Demonstração', cnpj: '00.000.000/0001-00',
+      plano: 'premium', status: 'active'
+    }];
+  }
+
+  // Função real que desenha a tabela
+  function desenharTabela(empresas) {
+    let tbody = document.querySelector('#empresasBody')
+           || document.querySelector('#tabelaEmpresas tbody')
+           || document.querySelector('table tbody');
+
+    if (!tbody) {
+      // cria uma tabela simples se não existir
+      const container = document.getElementById('lista-empresas') || document.body;
+      const table = document.createElement('table');
+      table.id = 'tabelaEmpresas';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>ID</th><th>Nome</th><th>CNPJ</th><th>Plano</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>`;
+      container.prepend(table);
+      tbody = table.querySelector('tbody');
+    }
+
+    tbody.innerHTML = '';
+    empresas.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.id ?? ''}</td>
+        <td>${e.nome ?? ''}</td>
+        <td>${e.cnpj ?? ''}</td>
+        <td>${e.plano ?? ''}</td>
+        <td>${e.status ?? ''}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Torna compatível com qualquer chamada antiga:
+  window.renderizarTabela = desenharTabela;
+
+  // Renderiza já na abertura:
+  const empresas = await carregarEmpresas();
+  desenharTabela(empresas);
+})();
+</script>
+
+</script>
+
+<!-- BLOCO 2: popular o select de empresa no LOGIN -->
+<script>
+  (async () => {
+    const empresas = await (window.SCP_EMPRESAS_PROMISE || Promise.resolve([]));
+
+    function popularSelect() {
+      // AJUSTE AQUI se seu select tiver outro id/name:
+      const sel = document.querySelector('#login-empresa, #empresa, select[name="empresa"]');
+      if (!sel) { console.warn('LOGIN: select de empresa não encontrado'); return; }
+
+      sel.innerHTML = '<option value="">Selecione a empresa</option>';
+      (empresas || []).forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id ?? e.codigo ?? e.nome;
+        opt.textContent = e.codigo ? `${e.nome} (${e.codigo})` : e.nome;
+        sel.appendChild(opt);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', popularSelect);
+    } else {
+      popularSelect();
+    }
+  })();
+</script>
+<!-- BLOCO 3: ANTIPISCA do select de empresas (cola por último, após vendedor.js) -->
+<script>
+(function() {
+  // Ajuste o seletor do select, se necessário:
+  const SELECTOR = '#login-empresa, #empresa, select[name="empresa"]';
+
+  // Pega as empresas que já pré-carregamos no BLOCO 1 (ou do localStorage)
+  async function getEmpresas() {
+    if (window.SCP_EMPRESAS_PROMISE) {
+      try { return await window.SCP_EMPRESAS_PROMISE; } catch {}
+    }
+    try { return JSON.parse(localStorage.getItem('empresas') || '[]'); } catch { return []; }
+  }
+
+  function popularSelectEmpresas(empresas) {
+    const sel = document.querySelector(SELECTOR);
+    if (!sel) return false;
+
+    // Se já está populado com várias opções reais, mantenha
+    if (sel.options && sel.options.length > 2) return true;
+
+    // (Re)popula
+    const current = sel.value; // tenta preservar seleção
+    sel.innerHTML = '<option value="">Selecione a empresa</option>';
+    empresas.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id ?? e.codigo ?? e.nome;
+      opt.textContent = e.codigo ? `${e.nome} (${e.codigo})` : e.nome;
+      sel.appendChild(opt);
+    });
+    // restaura seleção se existir
+    if (current && [...sel.options].some(o => o.value == current)) sel.value = current;
+    return true;
+  }
+
+  function isDemoOnly() {
+    try {
+      const ls = JSON.parse(localStorage.getItem('empresas') || '[]');
+      return Array.isArray(ls) && ls.length === 1 && /Demonstração/i.test(ls[0]?.nome || '');
+    } catch { return false; }
+  }
+
+  // Protege contra scripts que sobrescrevem o localStorage com a demo
+  function blindarLocalStorage(empresas) {
+    try {
+      const origSet = localStorage.setItem.bind(localStorage);
+      localStorage.setItem = function(k, v) {
+        // Se tentarem gravar "empresas" com apenas a demo, ignore
+        if (k === 'empresas') {
+          try {
+            const arr = JSON.parse(v);
+            if (Array.isArray(arr) && arr.length === 1 && /Demonstração/i.test(arr[0]?.nome || '')) {
+              console.warn('ANTIPISCA: bloqueado setItem(empresas) com demo.');
+              return;
+            }
+          } catch {}
+        }
+        return origSet(k, v);
+      };
+      // Escreve já as empresas reais
+      if (Array.isArray(empresas) && empresas.length) {
+        origSet('empresas', JSON.stringify(empresas));
+      }
+    } catch {}
+  }
+
+  async function start() {
+    const empresas = await getEmpresas();
+    blindarLocalStorage(empresas);
+
+    // 1) Tentativa imediata
+    popularSelectEmpresas(empresas);
+
+    // 2) Reforço cronometrado: repopula várias vezes nos primeiros segundos
+    let tries = 0;
+    const maxTries = 20; // ~4 segundos (20 * 200ms)
+    const timer = setInterval(() => {
+      tries++;
+      // se o select sumiu ou voltou à demo, repopula
+      const sel = document.querySelector(SELECTOR);
+      if (!sel || sel.options.length <= 1 || isDemoOnly()) {
+        popularSelectEmpresas(empresas);
+      }
+      if (tries >= maxTries) clearInterval(timer);
+    }, 200);
+
+    // 3) Observer: se algum script mexer no select, repopula
+    const sel = document.querySelector(SELECTOR);
+    if (sel && 'MutationObserver' in window) {
+      const mo = new MutationObserver(() => {
+        if (sel.options.length <= 1) {
+          popularSelectEmpresas(empresas);
+        }
+      });
+      mo.observe(sel, { childList: true });
+      // para não observar pra sempre, desconecta depois de 10s
+      setTimeout(() => mo.disconnect(), 10000);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+
+
+</body>
+</html>

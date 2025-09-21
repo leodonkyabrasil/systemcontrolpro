@@ -51,6 +51,19 @@
       "status": "active",
       "codigo": "0004",
       "logo": null
+    },
+    {
+      "id": 6,
+      "nome": "Da Paz",
+      "cnpj": "12315468447894",
+      "endereco": "",
+      "telefone": "",
+      "email": "",
+      "plano": "premium",
+      "dataCriacao": "2025-09-21T19:42:30.602Z",
+      "status": "active",
+      "codigo": "0005",
+      "logo": null
     }
   ]
 }

@@ -1,0 +1,49 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "empresaId": 1,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": "contato@lojaexemplo1.com.br"
+    },
+    {
+      "id": 1,
+      "empresaId": 2,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": "contato@lojaexemplo2.com.br"
+    },
+    {
+      "id": 1,
+      "empresaId": 3,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
+    },
+    {
+      "id": 1,
+      "empresaId": 4,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
+    },
+    {
+      "id": 1,
+      "empresaId": 6,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
+    }
+  ]
+}

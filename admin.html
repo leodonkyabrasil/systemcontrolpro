@@ -51,12 +51,9 @@
   .badge.err{background:#ffecec;color:#8a0012}
 
   .emp-row.selected { background:#eef2ff; }
-
-
 </style>
 </head>
 <body>
-
 
 <!-- BLOCO 1: impedir seed e pré-carregar empresas (LOGIN) -->
 <script>
@@ -72,7 +69,7 @@
   // 3) Pré-carrega empresas.json e coloca no localStorage ANTES de outros scripts
   window.SCP = window.SCP || {};
 
-    // Polyfill: se o core ainda não expôs a API, usa localStorage diretamente
+  // Polyfill: se o core ainda não expôs a API, usa localStorage diretamente
   if (typeof window.SCP.getData !== 'function') {
     window.SCP.getData = function (k) {
       try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; }
@@ -84,8 +81,7 @@
     };
   }
 
-
-// Polyfill: se o core-storage não estiver exposto ainda, usa localStorage direto
+  // Polyfill: se o core-storage não estiver exposto ainda, usa localStorage direto
   if (typeof window.SCP.getData !== 'function') {
     window.SCP.getData = function (key) {
       try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
@@ -99,10 +95,10 @@
 
   window.SCP_EMPRESAS_PROMISE = (async () => {
     try {
-      const url = new URL('empresas.json', document.baseURI);
-      const r = await fetch(url.toString() + '?ts=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
+      const EMPRESAS_URL = './empresas.json';
+      const resp = await fetch(EMPRESAS_URL + '?ts=' + Date.now(), { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
       const empresas = Array.isArray(data.empresas) ? data.empresas : [];
       if (empresas.length) {
         localStorage.setItem('empresas', JSON.stringify(empresas));
@@ -121,11 +117,7 @@
   })();
 </script>
 
-
-
 <script>window.renderizarTabela = window.renderizarTabela || function(){ /*stub*/ };</script>
-
-
 
 <!-- LOGIN -->
 <section id="login-view" class="login-wrap">
@@ -147,9 +139,6 @@
   </div>
 </section>
 
-
-
-
 <!-- APP -->
 <section id="app" style="display:none">
   <header>
@@ -158,6 +147,8 @@
       <button id="seed-reset" class="btn-ghost" title="Zera o storage e recarrega do empresas.json">Recarregar Seed</button>
       <button id="logout" class="btn-ghost">Sair</button>
       <button id="btn-export-empresas" class="btn">Exportar empresas.json</button>
+      <button id="btn-export-usuarios" class="btn">Exportar usuarios.json</button>
+
     </div>
   </header>
 
@@ -188,10 +179,9 @@
       <p class="muted" id="empresa-atual">Nenhuma empresa selecionada.</p>
 
       <div class="actions" style="justify-content:flex-end;margin-bottom:8px;gap:8px">
-  <button id="reset-admin" class="btn" disabled>Resetar senha do admin</button>
-  <button id="add-user" class="btn btn-primary" disabled>Novo usuário</button>
-</div>
-
+        <button id="reset-admin" class="btn" disabled>Resetar senha do admin</button>
+        <button id="add-user" class="btn btn-primary" disabled>Novo usuário</button>
+      </div>
 
       <table id="usuarios-table">
         <thead>
@@ -230,7 +220,6 @@ if (typeof window.SCP.setData !== 'function') {
   window.SCP.setData = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 }
 
-
 /* ===== STATE COMPARTILHADO ===== */
 let state = {
   empresas: [],
@@ -258,7 +247,33 @@ function saveAll(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   syncToSCPMirror(); // <-- espelha para o formato que o login entende
 }
+// Exporta usuarios.json no formato plano { usuarios: [...] }
+function exportUsuariosJSON(){
+  // "state" é o objeto mestre carregado do STORAGE_KEY (systemControlPro_data)
+  const out = [];
+  Object.keys(state.usuarios || {}).forEach(empId => {
+    (state.usuarios[empId] || []).forEach(u => {
+      out.push({
+        id: u.id,
+        empresaId: Number(empId),
+        username: u.username,
+        password: u.password,
+        role: u.role || 'seller',
+        ativo: (u.status || 'active') !== 'inactive',
+        email: u.email || ''
+      });
+    });
+  });
+  const blob = new Blob([JSON.stringify({ usuarios: out }, null, 2)], { type: 'application/json;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'usuarios.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
+// Wire do botão
+document.getElementById('btn-export-usuarios')?.addEventListener('click', exportUsuariosJSON);
 
 // Espelha o storage do Admin (systemControlPro_data) para o formato "plano" do SCP
 function syncToSCPMirror(){
@@ -297,7 +312,6 @@ function syncToSCPMirror(){
   }
 }
 
-
 /* ===== SEED INICIAL ===== */
 async function seedIfEmpty(){
   // carrega o que tiver
@@ -306,9 +320,9 @@ async function seedIfEmpty(){
   if (hadData && Array.isArray(state.empresas) && state.empresas.length > 0) return;
 
   try{
-    const url = new URL('empresas.json', document.baseURI);
-    const res = await fetch(url.toString(), { cache: 'no-cache' });
-    const data = await res.json();
+    const EMPRESAS_URL = './empresas.json';
+    const resp = await fetch(EMPRESAS_URL, { cache: 'no-cache' });
+    const data = await resp.json();
     state.empresas = data.empresas || [];
     state.usuarios = {}; state.produtos={}; state.clientes={};
     state.orcamentos={}; state.pedidos={}; state.configuracoes={}; state._auditLogs=[];
@@ -328,7 +342,6 @@ async function seedIfEmpty(){
     alert('Erro ao carregar empresas.json. Confirme se está na mesma pasta do admin.html.');
   }
 }
-
 
 /* ===== AUDITORIA ===== */
 function audit(empresaId, action, details){
@@ -363,38 +376,76 @@ let selectedEmpresaId = null;
 
 function renderEmpresas(){
   const q = ($('#empresa-search')?.value||'').toLowerCase();
-  const rows = state.empresas
-    .filter(e=> !q || [e.nome,e.cnpj,e.codigo].some(v=>String(v||'').toLowerCase().includes(q)))
-    .map(e=>`<tr data-id="${e.id}" class="emp-row">
-      <td>${e.id}</td>
-      <td>${e.nome}</td>
-      <td>${e.cnpj||''}</td>
-      <td>${e.plano||''}</td>
-      <td><span class="badge ${e.status==='active'?'ok':e.status==='pending'?'warn':'err'}">${e.status||'active'}</span></td>
-      <td class="actions">
-  <button class="btn" data-act="edit">Editar</button>
-  <button class="btn" data-act="del">Excluir</button>
-</td>
-        
-      </td>
-    </tr>`).join('');
 
-  $('#empresas-table tbody').innerHTML = rows || '<tr><td colspan="6">Nenhuma empresa</td></tr>';
+  const rows = (state.empresas||[])
+    .filter(e => !q || [e.nome,e.cnpj,e.codigo].some(v => String(v||'').toLowerCase().includes(q)))
+    .map(e => `
+      <tr data-id="${e.id}" class="emp-row" role="button" tabindex="0" aria-label="Empresa ${e.nome}">
+        <td>${e.id}</td>
+        <td>${e.nome}</td>
+        <td>${e.cnpj||''}</td>
+        <td>${e.plano||''}</td>
+        <td><span class="badge ${e.status==='active'?'ok':e.status==='pending'?'warn':'err'}">${e.status||'active'}</span></td>
+        <td class="actions">
+          <button class="btn" data-act="edit" type="button">Editar</button>
+          <button class="btn" data-act="del"  type="button">Excluir</button>
+        </td>
+      </tr>
+    `).join('');
 
-  // Se nada selecionado ainda, seleciona a 1ª empresa automaticamente
-  if (!selectedEmpresaId) {
-    const first = document.querySelector('#empresas-table tbody tr.emp-row');
-    if (first) {
-      selectedEmpresaId = Number(first.dataset.id);
-      renderUsuarios();
-    }
+  const tbody = document.querySelector('#empresas-table tbody');
+  if (tbody) tbody.innerHTML = rows || '<tr><td colspan="6">Nenhuma empresa</td></tr>';
+
+  // Seleciona a 1ª empresa se ainda não houver seleção
+  if (!selectedEmpresaId && (state.empresas||[]).length) {
+    selectedEmpresaId = state.empresas[0].id;
   }
 
-  // Destacar a linha selecionada
+  // Destaca visualmente a seleção atual
+  document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(tr=>{
+    tr.classList.toggle('selected', Number(tr.dataset.id) === Number(selectedEmpresaId));
+  });
+}
+
+
+
+function highlightSelectedEmpresaRow() {
   document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(tr=>{
     tr.classList.toggle('selected', Number(tr.dataset.id)===selectedEmpresaId);
   });
 }
+
+function onEmpresaRowClick(e){
+  const tr = e.currentTarget;
+  const id = Number(tr.dataset.id);
+  selectedEmpresaId = id;
+  highlightSelectedEmpresaRow();
+  renderUsuarios();
+}
+
+function attachEmpresaRowHandlers(){
+  document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(tr=>{
+    // clique na linha seleciona a empresa
+    tr.addEventListener('click', onEmpresaRowClick);
+    // acessibilidade: Enter/Espaço também selecionam
+    tr.addEventListener('keydown', (ev)=>{
+      if (ev.key==='Enter' || ev.key===' ') {
+        ev.preventDefault();
+        onEmpresaRowClick({ currentTarget: tr });
+      }
+    });
+    // botões de ação não devem “roubar” o clique da linha
+    tr.querySelectorAll('button[data-act]').forEach(btn=>{
+      btn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        const id = Number(tr.dataset.id);
+        if (btn.dataset.act === 'edit') { editEmpresa(id); }
+        if (btn.dataset.act === 'del')  { delEmpresa(id); }
+      });
+    });
+  });
+}
+
 
 function renderUsuarios(){
   const titulo = $('#empresa-atual');
@@ -427,8 +478,6 @@ function renderUsuarios(){
   </tr>`).join('');
   tbody.innerHTML = rows || '<tr><td colspan="5">Sem usuários nesta empresa</td></tr>';
 }
-
-
 
 function renderAudit(){
   const rows = (state._auditLogs||[]).map(a=>`<tr>
@@ -510,6 +559,7 @@ function addUser(){
   toast('Usuário criado');
   renderUsuarios();
 }
+
 document.getElementById('reset-admin').addEventListener('click', ()=>{
   if(!selectedEmpresaId){ toast('Selecione uma empresa'); return; }
   const list = state.usuarios[selectedEmpresaId] ||= [];
@@ -573,41 +623,63 @@ function exportEmpresas(){
   toast('empresas.json exportado');
 }
 
-
 /* ===== EVENTOS ===== */
 function bindUI(){
   // EMPRESAS
-  document.getElementById('empresa-search').addEventListener('input', renderEmpresas);
-  document.getElementById('add-empresa').addEventListener('click', addEmpresa);
-  document.getElementById('empresas-table').addEventListener('click', (e)=>{
-  const tr = e.target.closest('tr.emp-row'); if(!tr) return;
-  const id = Number(tr.dataset.id);
+  document.getElementById('empresa-search')?.addEventListener('input', renderEmpresas);
+  document.getElementById('add-empresa')?.addEventListener('click', addEmpresa);
 
-  if(e.target.dataset.act==='edit'){ editEmpresa(id); return; }
-  if(e.target.dataset.act==='del'){ delEmpresa(id); return; }
+  // Delegado de clique na TABELA de empresas
+  document.getElementById('empresas-table')?.addEventListener('click', (e) => {
+    // 1) tenta achar uma linha com a classe emp-row
+    let tr = e.target.closest('tr.emp-row');
 
-  // Seleciona a empresa ao clicar na linha
-  selectedEmpresaId = id;
+    // 2) fallback: se não tiver emp-row, pega QUALQUER <tr> do tbody
+    if (!tr) tr = e.target.closest('#empresas-table tbody tr');
+    if (!tr) return;
 
-  // Atualiza destaque visual
-  document.querySelectorAll('#empresas-table tbody tr.emp-row').forEach(row=>{
-    row.classList.toggle('selected', Number(row.dataset.id)===id);
+    // tenta extrair o id pela via normal (data-id)
+    let id = Number(tr.dataset?.id || 0);
+
+    // fallback: se não tiver data-id, pega o conteúdo da 1ª célula (ID)
+    if (!id) {
+      const firstCell = tr.querySelector('td');
+      if (firstCell) id = Number((firstCell.textContent||'').trim());
+    }
+    if (!id) return;
+
+    // se clicou num botão de ação dentro da linha
+    const btn = e.target.closest('button[data-act]');
+    if (btn) {
+      const act = btn.dataset.act;
+      if (act === 'edit') { editEmpresa(id); return; }
+      if (act === 'del')  { delEmpresa(id);  return; }
+    }
+
+    // Seleciona a empresa ao clicar na linha
+    selectedEmpresaId = id;
+
+    // Destaca a linha selecionada
+    document.querySelectorAll('#empresas-table tbody tr').forEach(row=>{
+      const rid = Number(row.dataset?.id || (row.querySelector('td')?.textContent||'0'));
+      row.classList.toggle('selected', rid === id);
+    });
+
+    // Carrega os usuários da empresa selecionada
+    renderUsuarios();
   });
 
-  renderUsuarios();
-});
-
   // USUÁRIOS
-  document.getElementById('add-user').addEventListener('click', addUser);
-  document.getElementById('usuarios-table').addEventListener('click', (e)=>{
+  document.getElementById('add-user')?.addEventListener('click', addUser);
+  document.getElementById('usuarios-table')?.addEventListener('click', (e)=>{
     const tr = e.target.closest('tr'); if(!tr) return;
     const uid = Number(tr.dataset.id);
     if(e.target.dataset.act==='u-edit'){ editUser(uid); }
-    if(e.target.dataset.act==='u-del'){ delUser(uid); }
+    if(e.target.dataset.act==='u-del'){  delUser(uid);  }
   });
 
   // SEED RESET
-  document.getElementById('seed-reset').addEventListener('click', async ()=>{
+  document.getElementById('seed-reset')?.addEventListener('click', async ()=>{
     if(!confirm('Isto APAGA os dados locais e recarrega do empresas.json. Continuar?')) return;
     localStorage.removeItem(STORAGE_KEY);
     await seedIfEmpty();
@@ -616,20 +688,16 @@ function bindUI(){
     toast('Seed recarregado do empresas.json');
   });
 
-    // EXPORTAR EMPRESAS.JSON
-  document.getElementById('btn-export-empresas')
-    .addEventListener('click', exportEmpresas);
-
+  // EXPORTAR (empresas.json)
+  document.getElementById('btn-export-empresas')?.addEventListener('click', exportEmpresas);
 
   // LOGOUT
-  document.getElementById('logout').addEventListener('click', ()=>{
+  document.getElementById('logout')?.addEventListener('click', ()=>{
     clearAdminSession();
     document.getElementById('app').style.display='none';
     document.getElementById('login-view').style.display='flex';
   });
 }
-
-
 
 /* ===== LOGIN: handler direto no form (garante mesmo se algo falhar) ===== */
 function doAdminLogin(ev){
@@ -670,9 +738,11 @@ function setupLogin(){
 function showApp(){
   document.getElementById('login-view').style.display='none';
   document.getElementById('app').style.display='block';
-  bindUI();
-  renderEmpresas(); renderUsuarios(); renderAudit();
+  bindUI();                       // 1) anexa eventos
+  renderEmpresas();               // 2) desenha as linhas
+  renderUsuarios(); renderAudit();// 3) painéis da direita e auditoria
 }
+
 
 /* ===== BOOT ===== */
 (async function(){
@@ -681,15 +751,12 @@ function showApp(){
   syncToSCPMirror();     // <<< NOVO: espelha para SCP (empresas/usuarios)
   setupLogin();         // se tiver sessão válida, entra direto
 })();
-
- 
-
- 
-
 </script>
+
 <script>window.SCP_DEMO_SEED = false;</script>
 
 <script src="core-storage.js"></script>
+
 <!-- ===== Configuração Fiscal (NF-e/NFS-e) — INÍCIO ===== -->
 <style>
   /* Estilos mínimos do modal */
@@ -940,86 +1007,10 @@ function showApp(){
   saveBtn.addEventListener('click', saveForm);
 
 })();
-
-
 </script>
 <!-- ===== Configuração Fiscal (NF-e/NFS-e) — FIM ===== -->
 
-    ...
-    <!-- aqui termina seu HTML normal -->
-    
-    
-     
-   <script>
-(async () => {
-  async function carregarEmpresas() {
-    try {
-      const EMPRESAS_URL = './empresas.json';
-      const resp = await fetch(EMPRESAS_URL + '?ts=' + Date.now(), { cache: 'no-store' });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      
-      const data = await resp.json();
-      if (data && Array.isArray(data.empresas)) {
-        localStorage.setItem('empresas', JSON.stringify(data.empresas));
-        return data.empresas;
-      }
-    } catch (e) {
-      console.warn('Não consegui carregar /empresas.json:', e);
-    }
-    // Fallbacks
-    const ls = localStorage.getItem('empresas');
-    if (ls) { try { return JSON.parse(ls); } catch {} }
-    return [{
-      id: 1, nome: 'Empresa Demonstração', cnpj: '00.000.000/0001-00',
-      plano: 'premium', status: 'active'
-    }];
-  }
-
-  // Função real que desenha a tabela
-  function desenharTabela(empresas) {
-    let tbody = document.querySelector('#empresasBody')
-           || document.querySelector('#tabelaEmpresas tbody')
-           || document.querySelector('table tbody');
-
-    if (!tbody) {
-      // cria uma tabela simples se não existir
-      const container = document.getElementById('lista-empresas') || document.body;
-      const table = document.createElement('table');
-      table.id = 'tabelaEmpresas';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th>ID</th><th>Nome</th><th>CNPJ</th><th>Plano</th><th>Status</th>
-          </tr>
-        </thead>
-        <tbody></tbody>`;
-      container.prepend(table);
-      tbody = table.querySelector('tbody');
-    }
-
-    tbody.innerHTML = '';
-    empresas.forEach(e => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${e.id ?? ''}</td>
-        <td>${e.nome ?? ''}</td>
-        <td>${e.cnpj ?? ''}</td>
-        <td>${e.plano ?? ''}</td>
-        <td>${e.status ?? ''}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // Torna compatível com qualquer chamada antiga:
-  window.renderizarTabela = desenharTabela;
-
-  // Renderiza já na abertura:
-  const empresas = await carregarEmpresas();
-  desenharTabela(empresas);
-})();
-</script>
-
-</script>
+ 
 
 <!-- BLOCO 2: popular o select de empresa no LOGIN -->
 <script>
@@ -1029,7 +1020,7 @@ function showApp(){
     function popularSelect() {
       // AJUSTE AQUI se seu select tiver outro id/name:
       const sel = document.querySelector('#login-empresa, #empresa, select[name="empresa"]');
-      if (!sel) { console.warn('LOGIN: select de empresa não encontrado'); return; }
+if (!sel) return;
 
       sel.innerHTML = '<option value="">Selecione a empresa</option>';
       (empresas || []).forEach(e => {
@@ -1040,6 +1031,7 @@ function showApp(){
       });
     }
 
+    // Garante que o código seja executado após o DOM estar totalmente carregado
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', popularSelect);
     } else {
@@ -1047,6 +1039,7 @@ function showApp(){
     }
   })();
 </script>
+
 <!-- BLOCO 3: ANTIPISCA do select de empresas (cola por último, após vendedor.js) -->
 <script>
 (function() {
@@ -1106,7 +1099,7 @@ function showApp(){
         }
         return origSet(k, v);
       };
-      // Escreve já as empresas reais
+      // Escreve já as empresas real
       if (Array.isArray(empresas) && empresas.length) {
         origSet('empresas', JSON.stringify(empresas));
       }
@@ -1147,6 +1140,7 @@ function showApp(){
     }
   }
 
+  // Garante que o código seja executado após o DOM estar totalmente carregado
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
   } else {
@@ -1154,8 +1148,6 @@ function showApp(){
   }
 })();
 </script>
-
-
 
 </body>
 </html>

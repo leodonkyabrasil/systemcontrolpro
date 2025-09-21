@@ -6,6 +6,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Control Pro - Gestão Multiempresas</title>
+    <!-- 1) Desliga a demo e permite forçar re-seed com ?scp_reseed=1 -->
+<script>
+  window.SCP_DEMO_SEED = false; // impede criar "Empresa Demonstração"
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.has('scp_reseed')) {
+      [
+        'systemControlPro_data','empresas','usuarios','produtos','clientes',
+        'orcamentos','pedidos','configFisco','scp_session','scp_last_session'
+      ].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+      try{ sessionStorage.removeItem('scp_session'); }catch(e){}
+    }
+  })();
+</script>
+
+<!-- 2) Semeia o storage a partir de /empresas.json se estiver vazio -->
+<script>
+  (async function seedFromJSONIfEmpty(){
+    var KEY = 'systemControlPro_data';
+    if (localStorage.getItem(KEY)) return; // já tem dados, sai
+
+    try{
+      var r = await fetch('./empresas.json?v=' + Date.now(), { cache:'no-store' });
+      var j = await r.json();
+      var empresas = Array.isArray(j.empresas) ? j.empresas : [];
+
+      var data = {
+        empresas, usuarios:{}, produtos:{}, clientes:{},
+        orcamentos:{}, pedidos:{}, configuracoes:{}, _auditLogs:[]
+      };
+      empresas.forEach(function(emp){
+        var id = emp.id;
+        data.usuarios[id] = [{
+          id:1, username:'admin', password:'admin123',
+          name:'Administrador', role:'admin', status:'active',
+          email: emp.email || ''
+        }];
+        data.produtos[id]=[]; data.clientes[id]=[];
+        data.orcamentos[id]=[]; data.pedidos[id]=[];
+        data.configuracoes[id] = { empresaId:id, metaMensal:10000, comissaoPercentual:5 };
+      });
+
+      localStorage.setItem(KEY, JSON.stringify(data));
+      console.log('[index] empresas.json aplicado ao systemControlPro_data');
+    }catch(e){
+      console.warn('Falha ao semear com empresas.json', e);
+    }
+  })();
+</script>
+
+    <script>
+  // Desliga a empresa de demonstração no login
+  window.SCP_DEMO_SEED = false;
+
+  // Opcional: se abrir com ?scp_reseed=1 zera o storage deste site,
+  // forçando recarregar do /empresas.json
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.has('scp_reseed')) {
+      localStorage.removeItem('systemControlPro_data');
+      localStorage.removeItem('empresas'); // espelho antigo, por via das dúvidas
+    }
+  })();
+</script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -710,6 +775,13 @@
 <button class="btn btn-secondary" id="restore-btn">
   <i class="fas fa-upload"></i> Restaurar
 </button>
+
+<button class="btn btn-secondary" id="change-pass-btn">
+  <i class="fas fa-key"></i> Senha
+</button>
+
+
+
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none">
 
       <button class="btn btn-secondary" id="logout-btn">
@@ -747,7 +819,7 @@
     <div id="notas" class="tab-content">
   <h2>Notas Fiscais</h2>
   <div id="notas-list"></div>
-  <button id="emitir-nota-btn" class="btn btn-success" onclick="SystemControlPro.abrirFormNota()">+ Emitir Nota</button>
+  <button id="emitir-nota-btn" class="btn btn-success" onclick="SystemControlPro.emitirNotaComFiscal()">+ Emitir Nota</button>
 </div>
     <div id="admin" class="tab-content"></div>
    
@@ -768,6 +840,83 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal de Configuração Fiscal (uso rápido na emissão) -->
+<div id="fisco-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="SystemControlPro.closeModal('fisco-modal')">&times;</span>
+    <h2><i class="fas fa-file-invoice-dollar"></i> Configuração Fiscal</h2>
+    <div id="fisco-body">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label style="flex:1;min-width:220px">
+          <div class="fx-label">Ativar emissão oficial</div>
+          <select id="fx-enabled" class="fx-select">
+            <option value="false">Desativado</option>
+            <option value="true">Ativado</option>
+          </select>
+        </label>
+
+        <label style="flex:1;min-width:220px">
+          <div class="fx-label">Provedor</div>
+          <select id="fx-provider" class="fx-select">
+            <option value="">Selecione…</option>
+            <option value="nfeio">NFe.io</option>
+            <option value="enotas">eNotas</option>
+            <option value="plugnotas">Plugnotas</option>
+            <option value="focus">Focus NFe</option>
+          </select>
+        </label>
+
+        <label style="flex:1;min-width:220px">
+          <div class="fx-label">Ambiente</div>
+          <select id="fx-amb" class="fx-select">
+            <option value="homolog">Homologação</option>
+            <option value="producao">Produção</option>
+          </select>
+        </label>
+
+        <label style="flex:1;min-width:220px">
+          <div class="fx-label">Regime Tributário</div>
+          <select id="fx-regime" class="fx-select">
+            <option value="mei">MEI / Simples</option>
+            <option value="simples">Simples Nacional</option>
+            <option value="presumido">Lucro Presumido</option>
+            <option value="real">Lucro Real</option>
+          </select>
+        </label>
+      </div>
+
+      <hr>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label style="flex:1;min-width:160px">
+          <div class="fx-label">UF</div>
+          <input id="fx-uf" class="fx-input" placeholder="SP">
+        </label>
+        <label style="flex:1;min-width:160px">
+          <div class="fx-label">ICMS (intra %)</div>
+          <input id="fx-icms-intra" class="fx-input" type="number" step="0.01">
+        </label>
+        <label style="flex:1;min-width:160px">
+          <div class="fx-label">ICMS (inter %)</div>
+          <input id="fx-icms-inter" class="fx-input" type="number" step="0.01">
+        </label>
+        <label style="flex:1;min-width:160px">
+          <div class="fx-label">PIS (%)</div>
+          <input id="fx-pis" class="fx-input" type="number" step="0.01">
+        </label>
+        <label style="flex:1;min-width:160px">
+          <div class="fx-label">COFINS (%)</div>
+          <input id="fx-cofins" class="fx-input" type="number" step="0.01">
+        </label>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-secondary" onclick="SystemControlPro.closeModal('fisco-modal')">Cancelar</button>
+        <button id="fx-save-continue" class="btn btn-success">Salvar e Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- Modal de confirmação -->
     <div id="confirm-modal" class="modal">
@@ -887,6 +1036,97 @@
                 }
             },
             
+
+// === FISCAL NO INDEX ===
+emitirNotaComFiscal: function(pedidoId){
+  const empresaId = this.currentEmpresa?.id;
+  if (!empresaId) return this.showToast?.('Empresa não selecionada', 'error');
+
+  const cfg = window.SCP?._getFiscalCfg?.(empresaId) || {};
+  document.getElementById('fx-enabled').value    = String(Boolean(cfg.enabled));
+  document.getElementById('fx-provider').value   = cfg.provider || '';
+  document.getElementById('fx-amb').value        = cfg.ambiente || 'homolog';
+  document.getElementById('fx-regime').value     = cfg.regime || 'mei';
+  document.getElementById('fx-uf').value         = cfg.uf || 'SP';
+  document.getElementById('fx-icms-intra').value = Number(cfg.aliqICMS_intra ?? 12);
+  document.getElementById('fx-icms-inter').value = Number(cfg.aliqICMS_inter ?? 18);
+  document.getElementById('fx-pis').value        = Number(cfg.aliqPIS ?? 0.65);
+  document.getElementById('fx-cofins').value     = Number(cfg.aliqCOFINS ?? 3.0);
+
+  const btn = document.getElementById('fx-save-continue');
+  btn.onclick = () => this._salvarFiscalEContinuarNota(pedidoId);
+
+  document.getElementById('fisco-modal').style.display = 'flex';
+},
+
+_salvarFiscalEContinuarNota: function(pedidoId){
+  const empresaId = this.currentEmpresa?.id;
+  if (!empresaId) return;
+
+  const cfg = {
+    enabled: document.getElementById('fx-enabled').value === 'true',
+    provider: document.getElementById('fx-provider').value || '',
+    ambiente: document.getElementById('fx-amb').value || 'homolog',
+    regime: document.getElementById('fx-regime').value || 'mei',
+    uf: (document.getElementById('fx-uf').value || 'SP').toUpperCase(),
+    aliqICMS_intra: Number(document.getElementById('fx-icms-intra').value || 12),
+    aliqICMS_inter: Number(document.getElementById('fx-icms-inter').value || 18),
+    aliqPIS: Number(document.getElementById('fx-pis').value || 0.65),
+    aliqCOFINS: Number(document.getElementById('fx-cofins').value || 3.0),
+  };
+
+  try { window.SCP?._saveFiscalCfg?.(empresaId, cfg); } catch(e){}
+
+  try {
+    this.configFisco = this.configFisco || {};
+    this.configFisco[empresaId] = cfg;
+    this.saveToStorage && this.saveToStorage();
+  } catch {}
+
+  this.closeModal && this.closeModal('fisco-modal');
+  this.abrirFormNota && this.abrirFormNota(pedidoId);
+},
+
+ 
+
+changeMyPassword: function () {
+  if (!this.currentUser || !this.currentEmpresa) {
+    return this.showToast?.('Nenhum usuário logado.', 'error');
+  }
+  const oldPass = prompt('Digite a senha atual:');
+  if (oldPass === null) return;
+  if (String(oldPass) !== String(this.currentUser.password || '')) {
+    return this.showToast?.('Senha atual incorreta.', 'error');
+  }
+  const newPass = prompt('Digite a nova senha:');
+  if (!newPass) return;
+
+  // 1) Atualiza no systemControlPro_data (por empresa)
+  const empId = this.currentEmpresa.id;
+  const lista = this.usuarios[empId] || [];
+  const u = lista.find(x => x.username === this.currentUser.username);
+  if (!u) return this.showToast?.('Usuário não encontrado.', 'error');
+
+  u.password = String(newPass);
+  this.currentUser.password = String(newPass);
+  this.saveToStorage(); // já persiste no localStorage
+
+  // 2) (espelho) Atualiza no SCP (login do vendedor)
+  try {
+    const flat = (window.SCP?.getData('usuarios') || []).map(x => {
+      if (Number(x.empresaId) === Number(empId) && x.username === u.username) {
+        return { ...x, password: String(newPass) };
+      }
+      return x;
+    });
+    window.SCP?.setData('usuarios', flat);
+  } catch (e) {}
+
+  this.showToast?.('Senha alterada com sucesso.', 'success');
+},
+
+
+
             // --- Sessão persistente ---
             SESSION_KEY: 'scp_session',
             SESSION_TTL_MS: 12 * 60 * 60 * 1000, // 12h padrão
@@ -1027,6 +1267,10 @@
             document.body.className = savedTheme;
         }
     } catch (e) {}
+    document.getElementById('change-pass-btn')?.addEventListener('click', () => {
+  SystemControlPro.changeMyPassword();
+});
+
 
                 this.setupEventListeners();
                 this.loadEmpresasDropdown();
@@ -1780,12 +2024,13 @@ saveFiscalSettings: function(){
       // inicializa troca de abas
       try { setupTabs(); } catch(e){}
 
-      // ... depois de ativar a aba e o conteúdo correspondente:
-if (tabName === 'orders' && typeof SystemControlPro.renderOrders === 'function') {
-  SystemControlPro.renderOrders();
-}
-if (tabName === 'notas' && typeof SystemControlPro.renderNotas === 'function') {
-  SystemControlPro.renderNotas();
+      // definir tabName pela aba ativa (fallback 'orders')
+      const _active = document.querySelector('[data-tab].active');
+      const tabName = _active ? _active.dataset.tab : 'orders';
+
+      // depois de ativar a aba e o conteúdo correspondente:
+      if (tabName === 'orders' && typeof SystemControlPro.renderOrders === 'function') {
+        SystemControlPro.renderOrders();
 }
 
       
@@ -2558,8 +2803,8 @@ const daysCalc = (() => {
                 const status = document.getElementById('company-status').value;
                 
                 this.empresas[empresaIndex] = {
-                    ...this.empresas[empresaIndex],
-                    nome: name,
+  ...this.empresas[empresaIndex],
+  nome: name,
                     cnpj: cnpj,
                     email: email,
                     telefone: phone,
@@ -5351,6 +5596,12 @@ resetUserGoalCommissionToGeneral: function(userId){
 
 }; // <= fecha o objeto SystemControlPro certinho
 
+// EXPOSE p/ vendedor.js enxergar (fora do module)
+window.SystemControlPro = SystemControlPro;
+window.setupTabs = typeof setupTabs === 'function' ? setupTabs : SystemControlPro.setupTabs?.bind(SystemControlPro);
+window.mostrarApp = (...args) => SystemControlPro.showApp?.(...args);
+
+
 // [TABS] ativa/desativa abas e renderiza conteúdo quando necessário
 function setupTabs(){
   const tabs  = document.querySelectorAll('.tabs .tab');
@@ -5382,6 +5633,8 @@ function setupTabs(){
     });
   });
 }
+
+
 
 
 // --- Inicialização (versão final do portal de vendas) ---
@@ -5442,87 +5695,44 @@ window.onload = async () => {
     </form>
   </div>
 </div>
-<script>window.SCP_DEMO_SEED = true;</script>
-
- <!-- suporte: limpar storage do app e forçar seed quando ?scp_reseed=1 -->
+ 
+<!-- 1) Config do portal + reset opcional (?scp_reseed=1) -->
 <script>
+  // Sempre semear a partir do empresas.json no portal do vendedor
+  window.SCP_DEMO_SEED = true;
+
+  // Se abrir com ?scp_reseed=1, zera o storage *deste site* e força re-seed
   (function () {
     const p = new URLSearchParams(location.search);
-    const shouldReseed = p.get('scp_reseed') === '1';
-    // sempre mantenha true no portal do vendedor (index) para buscar empresas.json
-    window.SCP_DEMO_SEED = true;
-
-    if (shouldReseed) {
+    if (p.get('scp_reseed') === '1') {
       const KEYS = [
         'systemControlPro_data','empresas','usuarios','produtos','clientes',
-        'orcamentos','pedidos','configFisco','scp_session','scp_last_session'
+        'orcamentos','pedidos','carrinho','configFisco','scp_session','scp_last_session'
       ];
       KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
       try { sessionStorage.removeItem('scp_session'); } catch(e){}
-      // pronto: na próxima carga o core-storage vai semear a partir do empresas.json
-    }
-   })();
-
-</script>
-<!-- suporte: limpar storage do app e forçar seed quando ?scp_reseed=1 -->
-<script>
-  (function () {
-    const p = new URLSearchParams(location.search);
-    const shouldReseed = p.get('scp_reseed') === '1';
-    window.SCP_DEMO_SEED = true;
-
-    if (shouldReseed) {
-      const KEYS = ['systemControlPro_data','empresas','usuarios','produtos','clientes','orcamentos','pedidos','configFisco','scp_session','scp_last_session'];
-      KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
-      try { sessionStorage.removeItem('scp_session'); } catch(e){}
     }
   })();
-</script>
 
-<!-- bloco com popularEmpresasSelect / carregarEmpresas / DOMContentLoaded -->
-<script>
-  (function () {
-    // ... todo o seu código mostrado (popularEmpresasSelect, carregarEmpresas, DOMContentLoaded) ...
-    document.addEventListener('DOMContentLoaded', async () => {
-      const empresas = await carregarEmpresas();
-      popularEmpresasSelect(empresas);
-    });
-  // Carrega empresas a partir do core-storage (SCP) ou do espelho no localStorage
-  async function carregarEmpresas() {
+  // Quando a página terminar de carregar:
+  //  - semear do empresas.json (core-storage)
+  //  - popular o <select> com as empresas (vendedor.js)
+  document.addEventListener('DOMContentLoaded', async () => {
     try {
-      if (window.SCP_DEMO_SEED === true && window.SCP?.seedIfEmpty) {
-        await window.SCP.seedIfEmpty();
-      }
+      if (window.SCP?.seedIfEmpty) { await window.SCP.seedIfEmpty(); }
     } catch (e) {
       console.warn('Seed falhou:', e);
     }
-
-    if (window.SCP?.getData) {
-      return window.SCP.getData('empresas') || [];
+    if (typeof window.popularEmpresasSelect === 'function') {
+      window.popularEmpresasSelect();
     }
-
-    try {
-      const raw = localStorage.getItem('systemControlPro_data') || '{}';
-      const parsed = JSON.parse(raw);
-      return parsed.empresas || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-
-  })();
-
-
-</script>
-
-<script src="core-storage.js" defer></script>
-<script src="vendedor.js" defer></script>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    popularEmpresasSelect();   // 👈 chama a função exposta no window
   });
 </script>
+
+<!-- 2) Carregar o core e o portal (defer garante execução antes do DOMContentLoaded) -->
+<script src="core-storage.js" defer></script>
+<script src="vendedor.js" defer></script>
+
  
 
 </body>

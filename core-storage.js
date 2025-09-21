@@ -3,7 +3,7 @@
 
   // ====== SNAPSHOTS: CONFIG E HELPERS ======
   // Ajuste a URL se rodar em outra porta/host:
-  const SNAPSHOT_BASE = 'http://localhost:5501/api';
+  const SNAPSHOT_BASE = 'http://localhost:5500/api';
 
   let _snapshotTimer = null;
   let _snapshotReason = 'auto';
@@ -90,41 +90,74 @@
   }
 
   // ====== SEED & NORMALIZE ======
-  async function seedIfEmpty() {
-    const emp = getData('empresas');
-    const precisaSemear = (emp === null) || (Array.isArray(emp) && emp.length === 0);
-    if (precisaSemear) {
-      try {
-        const bust = (window.SCP_BUILD_ID || Date.now());
-        const url = new URL('empresas.json', document.baseURI);
-    const resp = await fetch('./empresas.json?v=' + bust, { cache: 'no-store' });
+  // ====== SEED & NORMALIZE ======
+async function seedIfEmpty() {
+  // Se já tem empresas válidas, não faz nada
+  const emp = getData('empresas');
+  const temEmpresas = Array.isArray(emp) && emp.length > 0;
+  if (temEmpresas) return;
+
+  // 1) EMPRESAS: sempre tenta carregar do empresas.json
+  try {
+    const resp = await fetch('./empresas.json', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const data = await resp.json();
-        const empresas = Array.isArray(data.empresas) ? data.empresas : [];
-        setData('empresas', empresas);
+    const data = await resp.json();
+    const empresas = Array.isArray(data.empresas) ? data.empresas : [];
+    if (!empresas.length) return; // sem empresas, sem seed
+    setData('empresas', empresas);
 
-        let usuarios = getData('usuarios') || [];
-        let nextUserId = nextIdFromArray(usuarios);
+    // 2) USUÁRIOS:
+    // tenta pegar do storage; se vazio, tenta usuarios.json;
+    // e garante um admin/admin123 por empresa se faltar
+    let usuarios = getData('usuarios') || [];
 
-        empresas.forEach(e => {
-          const jaTemAdmin = usuarios.some(u => u.empresaId === e.id && u.role === 'admin');
-          if (!jaTemAdmin) {
-            usuarios.push({
-              id: nextUserId++,
-              empresaId: e.id,
-              username: 'admin',
-              password: 'admin123',
-              role: 'admin',
-              ativo: true
-            });
-          }
-        });
-        setData('usuarios', usuarios);
+    if (usuarios.length === 0) {
+      try {
+        const ur = await fetch('./usuarios.json', { cache: 'no-store' });
+        if (ur.ok) {
+          const uj = await ur.json();
+          const raw = Array.isArray(uj?.usuarios) ? uj.usuarios
+                     : (Array.isArray(uj) ? uj : []);
+          usuarios = raw.map((u, i) => ({
+            id: Number(u.id ?? (i + 1)),
+            empresaId: Number(u.empresaId),
+            username: String(u.username || '').trim(),
+            password: String(u.password || '').trim(),
+            role: u.role || 'seller',
+            ativo: u.ativo !== false
+          })).filter(u => u.empresaId && u.username && u.password);
+        }
       } catch (e) {
-        console.warn('Seed empresas falhou:', e);
+        console.warn('[seed] usuarios.json não encontrado ou inválido:', e);
       }
     }
+
+    // garante admin/admin123 por empresa
+    let nextId = usuarios.reduce((m, u) => Math.max(m, Number(u.id || 0)), 0) + 1;
+    empresas.forEach(e => {
+      const temAdmin = usuarios.some(u =>
+        Number(u.empresaId) === Number(e.id) && u.username === 'admin'
+      );
+      if (!temAdmin) {
+        usuarios.push({
+          id: nextId++,
+          empresaId: Number(e.id),
+          username: 'admin',
+          password: 'admin123',
+          role: 'admin',
+          ativo: true
+        });
+      }
+    });
+
+    setData('usuarios', usuarios);
+    console.log('[SCP] Seed concluído:', { empresas: empresas.length, usuarios: usuarios.length });
+
+  } catch (e) {
+    console.warn('Seed empresas falhou:', e);
   }
+}
+
 
   // ===== Bridge: espelha systemControlPro_data -> SCP (empresas/usuarios) =====
   function bridgeSyncFromSystemControlPro() {
@@ -230,31 +263,19 @@
   const configFisco = {};
 
   function _getFiscalCfg(empresaId) {
-    const base = {
-      enabled: false,
-      provider: '',
-      apiToken: '',
-      ambiente: 'homolog',
-      regime: 'mei',
-      certificadoA1: null,
-      certificadoSenha: '',
-      autoEmitOnApprove: true,
-      cfopDentro: '5102',
-      cfopFora: '6102',
-      cst_csosn: '102',
-      pisCofinsCumulativo: true,
-      // novos defaults p/ cálculo interno
-      uf: 'SP',                 // UF da empresa
-      aliqICMS_intra: 12,       // ICMS dentro do estado (%)
-      aliqICMS_inter: 18,       // ICMS fora do estado (%)
-      aliqPIS: 0.65,            // PIS (%)
-      aliqCOFINS: 3.0,          // COFINS (%)
-      calcularTributosInternos: true // liga/desliga cálculo no PDF interno
-    };
-    return { ...base, ...(configFisco[empresaId] || {}) };
-  }
+  const base = {
+    uf: 'SP',
+    aliqICMS_intra: 12,
+    aliqICMS_inter: 18,
+    aliqPIS: 0.65,
+    aliqCOFINS: 3.0,
+    calcularTributosInternos: true
+  };
+  return { ...base, ...(configFisco[empresaId] || {}) };
+}
+  
 
-  function _saveFiscalCfg(empresaId, cfg) {
+function _saveFiscalCfg(empresaId, cfg) {
   configFisco[empresaId] = { ..._getFiscalCfg(empresaId), ...cfg };
   setData('configFisco', configFisco);
 }
@@ -268,6 +289,9 @@
     syncFromAdmin: bridgeSyncFromSystemControlPro
   };
 
+
+
+  
   // ====== INIT ======
   (async function init() {
     window.addEventListener('storage', (e) => {

@@ -4,10 +4,19 @@
       "id": 1,
       "empresaId": 1,
       "username": "admin",
-      "password": "admin123",
+      "password": "senha123",
       "role": "admin",
       "ativo": true,
-      "email": "contato@lojaexemplo1.com.br"
+      "email": "admin@empresa.com"
+    },
+    {
+      "id": 2,
+      "empresaId": 1,
+      "username": "vendedor",
+      "password": "senha123",
+      "role": "seller",
+      "ativo": true,
+      "email": "vendedor@empresa.com"
     },
     {
       "id": 1,
@@ -16,31 +25,13 @@
       "password": "admin123",
       "role": "admin",
       "ativo": true,
-      "email": "contato@lojaexemplo2.com.br"
-    },
-    {
-      "id": 1,
-      "empresaId": 3,
-      "username": "admin",
-      "password": "admin123",
-      "role": "admin",
-      "ativo": true,
       "email": ""
     },
     {
-      "id": 1,
-      "empresaId": 4,
-      "username": "admin",
-      "password": "admin123",
-      "role": "admin",
-      "ativo": true,
-      "email": ""
-    },
-    {
-      "id": 1,
-      "empresaId": 6,
-      "username": "admin",
-      "password": "admin123",
+      "id": 2,
+      "empresaId": 2,
+      "username": "dapaz",
+      "password": "123",
       "role": "admin",
       "ativo": true,
       "email": ""

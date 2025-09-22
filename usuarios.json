@@ -35,6 +35,24 @@
       "role": "admin",
       "ativo": true,
       "email": ""
+    },
+    {
+      "id": 1,
+      "empresaId": 3,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
+    },
+    {
+      "id": 2,
+      "empresaId": 3,
+      "username": "ingrid",
+      "password": "123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
     }
   ]
 }

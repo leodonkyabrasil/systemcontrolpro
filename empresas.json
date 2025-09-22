@@ -25,6 +25,19 @@
       "status": "active",
       "codigo": "0002",
       "logo": null
+    },
+    {
+      "id": 3,
+      "nome": "TM Ferramentas",
+      "cnpj": "1234567890001",
+      "endereco": "",
+      "telefone": "",
+      "email": "",
+      "plano": "premium",
+      "dataCriacao": "2025-09-22T00:39:50.379Z",
+      "status": "active",
+      "codigo": "0003",
+      "logo": null
     }
   ]
 }

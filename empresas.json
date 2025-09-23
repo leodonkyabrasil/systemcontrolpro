@@ -38,32 +38,6 @@
       "status": "active",
       "codigo": "0003",
       "logo": null
-    },
-    {
-      "id": 4,
-      "nome": "Lojas Cem",
-      "cnpj": "1234567890001",
-      "endereco": "",
-      "telefone": "",
-      "email": "",
-      "plano": "basic",
-      "dataCriacao": "2025-09-18T16:11:31.053Z",
-      "status": "active",
-      "codigo": "0004",
-      "logo": null
-    },
-    {
-      "id": 6,
-      "nome": "Da Paz",
-      "cnpj": "12315468447894",
-      "endereco": "",
-      "telefone": "",
-      "email": "",
-      "plano": "premium",
-      "dataCriacao": "2025-09-21T19:42:30.602Z",
-      "status": "active",
-      "codigo": "0005",
-      "logo": null
     }
   ]
 }

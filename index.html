@@ -1054,7 +1054,14 @@ emitirNotaComFiscal: function(pedidoId){
   document.getElementById('fx-cofins').value     = Number(cfg.aliqCOFINS ?? 3.0);
 
   const btn = document.getElementById('fx-save-continue');
-  btn.onclick = () => this._salvarFiscalEContinuarNota(pedidoId);
+  // pega o último pedido da empresa, caso não tenha vindo um id
+const lista = (this.pedidos[empresaId]||[])
+  .slice()
+  .sort((a,b)=>new Date(b.data||b.createdAt||0)-new Date(a.data||a.createdAt||0));
+const pidAuto = pedidoId || (lista[0]?.id ?? null);
+this.__nfPedidoId = pidAuto;          // guarda para o submit
+btn.onclick = () => this._salvarFiscalEContinuarNota(pidAuto);
+
 
   document.getElementById('fisco-modal').style.display = 'flex';
 },
@@ -1178,8 +1185,8 @@ changeMyPassword: function () {
                 if (!s) return false;
 
                 if (s.role === 'system_admin') {
-                    this.currentUser = { ...this.admin };
-                    this.currentEmpresa = null;
+  this.currentUser = this.admin;
+  this.currentEmpresa = null;
                     this.showApp();
                     return true;
                 }
@@ -1610,6 +1617,23 @@ abrirFormNota: function(){
 
   // bind submit
   const form = document.getElementById('nota-form');
+  // >>> PREFILL a partir do pedido (NOVO)
+if (pedidoId) {
+  const empresaId = this.currentEmpresa?.id;
+  const pedido = (this.pedidos[empresaId]||[]).find(p=>String(p.id)===String(pedidoId));
+  if (pedido) {
+    const orc = (this.orcamentos[empresaId]||[]).find(o=>o.id===pedido.orcamentoId) || {};
+    const cliente = (this.clientes[empresaId]||[]).find(c=>c.id === (orc.clienteId ?? pedido.clienteId)) || {};
+    document.getElementById('nf-numero').value = pedido.numero || pedido.id;
+    document.getElementById('nf-data').value = new Date(pedido.data || pedido.createdAt || Date.now()).toISOString().slice(0,16);
+    document.getElementById('nf-cliente-nome').value = cliente.nome || pedido.clienteNome || '';
+    document.getElementById('nf-doc').value = cliente.cpf || cliente.cnpj || '';
+    const itens = (pedido.items || orc.items || []);
+    const total = itens.reduce((s,i)=> s + Number(i.preco || i.price || 0) * Number(i.qtd || i.quantidade || i.qty || 1), 0);
+    document.getElementById('nf-total').value = total.toFixed(2);
+  }
+}
+
   form && form.addEventListener('submit', (e)=> this._submitNotaForm(e));
 
   // abrir modal
@@ -1629,16 +1653,42 @@ _submitNotaForm: function(e){
   const total = Number(document.getElementById('nf-total')?.value || 0);
   const obs = document.getElementById('nf-obs')?.value?.trim();
 
-  if (!this.notas[empresaId]) this.notas[empresaId] = [];
-  this.notas[empresaId].push({
-    numero,
-    data: new Date(dataISO).toISOString(),
-    clienteNome,
-    cpfCnpj,
-    total,
-    obs,
-    anexos: [] // no futuro: DANFE/XML oficiais
-  });
+ if (!this.notas[empresaId]) this.notas[empresaId] = [];
+
+const nota = {
+  numero,
+  data: new Date(dataISO).toISOString(),
+  clienteNome,
+  cpfCnpj,
+  total,
+  obs,
+  anexos: []
+};
+
+// gerar anexos (PDF/XML) se vier de um pedido
+const pid = this.__nfPedidoId;
+if (pid) {
+  const pedido = (this.pedidos[empresaId]||[]).find(p=>String(p.id)===String(pid));
+  if (pedido && this.generateInvoice) {
+    const nf = this.generateInvoice(pedido); // retorna { pdfDataUrl, xmlContent }
+    if (nf?.pdfDataUrl) nota.anexos.push({ name: `DANFE-${numero||pid}.pdf`, dataUrl: nf.pdfDataUrl });
+    if (nf?.xmlContent) {
+      const blob = new Blob([nf.xmlContent], { type:'application/xml' });
+      const dataUrl = URL.createObjectURL(blob);
+      nota.anexos.push({ name: `NFe-${numero||pid}.xml`, dataUrl });
+      if (nota.anexos?.length) {
+  const link = document.createElement('a');
+  link.href = nota.anexos[0].dataUrl;
+  link.download = nota.anexos[0].name;
+  link.click();
+}
+
+    }
+  }
+}
+
+this.notas[empresaId].push(nota);
+
 
   this._saveNotas();
   this.closeModal && this.closeModal('form-modal');
@@ -1947,73 +1997,26 @@ saveFiscalSettings: function(){
                 this.saveToStorage();
             },
             
-            // Manipular login
-            handleLogin: function() {
-                // Verificar trials expirados antes do login
-                this.checkExpiredTrials();
-                
-                const empresaId = document.getElementById('empresa').value;
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const remember = document.getElementById('remember-me').checked;
-                
-                // Verificar se é login do admin do sistema
-                if (empresaId === 'system_admin') {
-                    if (username === this.admin.username && password === this.admin.password) {
-                        this.currentUser = this.admin;
-                        this.currentEmpresa = null;
-                        this.saveSession(this.admin, null, remember);
-                        this.showApp();
-                        this.showToast('Login como administrador do sistema realizado com sucesso!', 'success');
-                        return;
-                    } else {
-                        this.showToast('Credenciais de administração inválidas', 'error');
-                        return;
-                    }
-                }
-                
-                // Verificar se é login de empresa
-                if (!empresaId) {
-                    this.showToast('Selecione uma empresa', 'error');
-                    return;
-                }
-                
-                const empresa = this.empresas.find(e => e.id == empresaId);
-                
-                if (!empresa) {
-                    this.showToast('Empresa não encontrada', 'error');
-                    return;
-                }
-                
-                // Verificar se a empresa está ativa
-                if (empresa.status !== 'active' && 
-                    !(empresa.status === 'trial' && this.isTrialValid(empresa.dataCriacao))) {
-                    this.showToast('Esta empresa não está ativa ou o trial expirou', 'error');
-                    return;
-                }
-                
-                const usuariosEmpresa = this.usuarios[empresaId] || [];
-                const user = usuariosEmpresa.find(u => u.username === username && u.password === password);
-                
-                if (user) {
-                    this.currentUser = user;
-                    this.currentEmpresa = empresa;
-                    this.saveSession(user, empresa, remember);
-                    this.showApp();
-					this.logAction('login', { username: username }); // ADICIONE ESTA LINHA
-                    this.showToast('Login realizado com sucesso!', 'success');
-                } else {
-                    this.showToast('Usuário ou senha inválidos', 'error');
+            // Manipular login (delegando para o fluxo do vendedor.js)
+            handleLogin: function(event) {
+                try {
+                    return typeof onLoginSubmit === 'function'
+                        ? onLoginSubmit(event)
+                        : false;
+                } catch (e) {
+                    console.error('[handleLogin->onLoginSubmit] falhou', e);
+                    alert('Falha ao processar login. Veja o Console (F12).');
+                    return false;
                 }
             },
             
-            // Mostrar aplicação
+            
                 // Mostrar aplicação
     showApp: function () {
       const login = document.getElementById('login-container');
       const app   = document.getElementById('app-container');
       if (login) login.style.display = 'none';
-      if (app)   app.style.display   = 'block';
+      if (app)   app.style.display   = 'flex';
 
       // (opcional) se existirem
       try { this.bindUI && this.bindUI(); } catch(e){}
@@ -2024,9 +2027,14 @@ saveFiscalSettings: function(){
       // inicializa troca de abas
       try { setupTabs(); } catch(e){}
 
-      // definir tabName pela aba ativa (fallback 'orders')
-      const _active = document.querySelector('[data-tab].active');
-      const tabName = _active ? _active.dataset.tab : 'orders';
+      // definir tabName pela aba ativa (fallback 'dashboard')
+const _active = document.querySelector('[data-tab].active');
+const tabName = _active ? _active.dataset.tab : 'dashboard';
+
+// se já for dashboard, renderiza na hora
+if (tabName === 'dashboard' && typeof this.loadDashboard === 'function') {
+  this.loadDashboard();
+}
 
       // depois de ativar a aba e o conteúdo correspondente:
       if (tabName === 'orders' && typeof SystemControlPro.renderOrders === 'function') {
@@ -2440,6 +2448,61 @@ loadDashboard: function() {
     `;
   };
 
+
+  // painel "Metas por Vendedor" (mostra para admin da empresa; vendedor vê somente o próprio)
+  const renderMetasEquipe = () => {
+    const empresaId = this.currentEmpresa?.id;
+    if (!empresaId) return '';
+
+    const todos = (this.usuarios[empresaId] || []).filter(u => u.status !== 'inactive');
+    const sellers = this.currentUser.role === 'admin'
+      ? todos.filter(u => u.role === 'seller')
+      : todos.filter(u => u.role === 'seller' && u.id === this.currentUser.id);
+
+    if (!sellers.length) return '';
+
+    // ajuda: total por vendedor no mês
+    const totalPorVendedor = (uid) => {
+      const meus = pedidosAll.filter(p => {
+        const d = new Date(p.createdAt || p.data || Date.now());
+        return p.vendedorId === uid && d >= first && d <= last;
+      });
+      return meus.reduce((acc, p) => {
+        if (Number.isFinite(+p.total)) return acc + (+p.total);
+        const orc = orcPorId[p.orcamentoId];
+        return acc + somaItensOrc(orc);
+      }, 0);
+    };
+
+    const linhas = sellers.map(u => {
+      const metaUser = getUserGoal(u.id);
+      const comRate  = getUserCommission(u.id);
+      const vendas   = totalPorVendedor(u.id);
+      const pct      = metaUser > 0 ? Math.min(100, (vendas / metaUser) * 100) : 0;
+      const comiss   = vendas * comRate;
+
+      return `
+        <div class="stat-card" data-card-id="meta-${u.id}">
+          <h3>${u.name || u.username}</h3>
+          <div class="stat-value">R$ ${vendas.toFixed(2)} / R$ ${metaUser.toFixed(2)}</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div>${pct.toFixed(1)}% • Comissão: R$ ${comiss.toFixed(2)} (${(comRate*100).toFixed(1)}%)</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="card">
+        <h2><i class="fas fa-users"></i> Metas por Vendedor</h2>
+        <div class="stats-grid">
+          ${linhas}
+        </div>
+      </div>
+    `;
+  };
+
+
+
   // Render
   dashboard.innerHTML = `
     <div class="stats-grid">
@@ -2482,8 +2545,96 @@ loadDashboard: function() {
     </div>
 
     ${ renderMeuDesempenho() }
+     ${ renderMetasEquipe() }
+     
   `;
+  // === Drag & Drop do dashboard (seguro) ===
+  try {
+    // use a referência já criada no início do método:
+    // const dashboard = document.getElementById('dashboard');
+    const grid =
+      dashboard.querySelector('.stats-grid') ||
+      dashboard; // fallback
+
+    if (!grid) throw new Error('grid do dashboard não encontrado');
+
+    // marque cada card e habilite arrastar
+    [...grid.children].forEach((el, i) => {
+      el.setAttribute('draggable', 'true');
+      if (!el.dataset.cardId) {
+        const title = (el.querySelector('h3')?.textContent || `card-${i}`).trim();
+        el.dataset.cardId = `card-${i}-${title}`;
+      }
+      el.style.cursor = 'grab';
+    });
+
+    const uid = this.currentUser?.id ?? 'anon';
+    const eid = this.currentEmpresaId ?? this.empresaId ?? '0';
+    const storageKey = `scp_dash_order:${eid}:${uid}`;
+
+    // restaura ordem salva
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (Array.isArray(saved) && saved.length) {
+        const map = {};
+        [...grid.querySelectorAll('[data-card-id]')].forEach(el => (map[el.dataset.cardId] = el));
+        saved.forEach(id => map[id] && grid.appendChild(map[id]));
+      }
+    } catch(e) {
+      console.warn('[DnD] falha ao restaurar ordem', e);
+    }
+
+    let dragEl = null;
+
+    grid.addEventListener('dragstart', e => {
+      const el = e.target.closest('[data-card-id]');
+      if (!el) return;
+      dragEl = el;
+      el.classList.add('dragging');
+      // protege em navegadores que exigem data
+      try { e.dataTransfer.setData('text/plain', el.dataset.cardId || ''); } catch {}
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    grid.addEventListener('dragend', e => {
+      const el = e.target.closest('[data-card-id]');
+      if (!el) return;
+      el.classList.remove('dragging');
+      dragEl = null;
+
+      // salva nova ordem
+      const ids = [...grid.querySelectorAll('[data-card-id]')].map(x => x.dataset.cardId);
+      try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch(e){
+        console.warn('[DnD] não consegui salvar ordem', e);
+      }
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!dragEl) return;
+      const after = getAfterElement(grid, e.clientY);
+      if (!after) grid.appendChild(dragEl);
+      else grid.insertBefore(dragEl, after);
+    });
+
+    function getAfterElement(container, y) {
+      const els = [...container.querySelectorAll('[data-card-id]:not(.dragging)')];
+      return els.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) return { offset, element: child };
+          return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null }
+      ).element;
+    }
+  } catch (e) {
+    console.warn('[DnD] desativado por erro seguro:', e);
+  }
 }, // <— fecha o método loadDashboard
+
+
 
 
         // ==== Configurações da empresa ====

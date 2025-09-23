@@ -28,20 +28,20 @@
       "email": ""
     },
     {
-      "id": 1,
-      "empresaId": 4,
-      "username": "admin",
-      "password": "admin123",
+      "id": 2,
+      "empresaId": 3,
+      "username": "ingrid",
+      "password": "123",
       "role": "admin",
       "ativo": true,
       "email": ""
     },
     {
-      "id": 1,
-      "empresaId": 6,
-      "username": "admin",
-      "password": "admin123",
-      "role": "admin",
+      "id": 3,
+      "empresaId": 3,
+      "username": "joao",
+      "password": "123",
+      "role": "seller",
       "ativo": true,
       "email": ""
     }

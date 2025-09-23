@@ -32,7 +32,8 @@
     window.VND_refreshEmpresas = () => { try { popularEmpresasSelect(); } catch (e) { console.warn(e); } };
 
     // (opcional) restaurar sessão automática – mantido neutro por enquanto
-    // restaurarSessao();
+        restaurarSessao();
+
   }
 
   // ===== helpers =====
@@ -168,7 +169,68 @@ function syncUsersToSCP() {
     console.error('Erro ao sincronizar usuários para SCP:', error);
   }
 }
+
+// Importa usuarios.json do servidor e mescla no systemControlPro_data e no espelho SCP
+async function importUsuariosJsonMerge() {
+  try {
+    const res = await fetch('usuarios.json', { cache: 'no-store' });
+    if (!res.ok) return; // nada pra fazer
+    const j = await res.json();
+    // Aceita tanto { usuarios: [...] } quanto um array direto
+    const flat = Array.isArray(j) ? j : (Array.isArray(j.usuarios) ? j.usuarios : []);
+    if (!flat.length) return;
+
+    // 1) Espelha no SCP (flat)
+    try { window.SCP?.setData && window.SCP.setData('usuarios', flat); } catch {}
+
+    // 2) Constrói/mescla em systemControlPro_data (por empresa)
+    const KEY = 'systemControlPro_data';
+    const sys = JSON.parse(localStorage.getItem(KEY) || '{"usuarios":{}}');
+    sys.usuarios = sys.usuarios || {};
+    // agrupa por empresaId
+    const porEmpresa = {};
+    flat.forEach(u => {
+      const eid = Number(u.empresaId);
+      porEmpresa[eid] = porEmpresa[eid] || [];
+      porEmpresa[eid].push(u);
+    });
+    Object.keys(porEmpresa).forEach(eidStr => {
+      const eid = Number(eidStr);
+      sys.usuarios[eid] = Array.isArray(sys.usuarios[eid]) ? sys.usuarios[eid] : [];
+      const lista = sys.usuarios[eid];
+      porEmpresa[eid].forEach(nu => {
+        const i = lista.findIndex(x => x.username === nu.username);
+        if (i >= 0) {
+          // atualiza
+          lista[i] = { ...lista[i], ...nu };
+        } else {
+          // insere
+          lista.push({
+            id: nu.id || Date.now(),
+            username: nu.username,
+            password: nu.password,
+            name: nu.name || nu.username,
+            role: nu.role || 'seller',
+            status: nu.ativo === false ? 'inactive' : 'active',
+            email: nu.email || ''
+          });
+        }
+      });
+    });
+    localStorage.setItem(KEY, JSON.stringify(sys));
+    console.log('[importUsuariosJsonMerge] usuarios.json importado e mesclado');
+  } catch (e) {
+    console.warn('[importUsuariosJsonMerge] falhou', e);
+  }
+}
+
   async function onLoginSubmit(ev) {
+    // 0) Importa/mescla usuarios.json do servidor (se existir)
+await importUsuariosJsonMerge();
+
+// 0.5) (opcional) mantém o espelho SCP em linha com o systemControlPro_data
+syncUsersToSCP(); // você já tem essa função
+
   if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
 
   // Sincroniza os usuários do systemControlPro_data para o SCP
@@ -224,6 +286,16 @@ function syncUsersToSCP() {
   try { sessionStorage.setItem('scp_session', JSON.stringify(session)); } catch {}
   try { localStorage.setItem('scp_last_session', JSON.stringify(session)); } catch {}
 
+// NOVO: gravar também no localStorage no formato que o index.html espera
+try {
+  localStorage.setItem('scp_session', JSON.stringify({
+    username: user.username,
+    role: user.role || 'seller',
+    empresaId: Number(empresaId),
+    ts: Date.now(),
+    remember: !!document.getElementById('remember-me')?.checked
+  }));
+} catch {}
 
   // DEBUG: Verificar dados de usuários
 console.log("=== DEBUG USER DATA ===");
@@ -301,6 +373,13 @@ try {
     }
     const firstTab = document.querySelector('.tabs .tab');
     if (firstTab) firstTab.click();
+    // garante que a aba do dashboard realmente fica ativa
+const dashTab = document.querySelector('.tabs .tab[data-tab="dashboard"]');
+if (dashTab) dashTab.click();
+
+// render extra defensiva do dashboard
+try { SystemControlPro.loadDashboard && SystemControlPro.loadDashboard(); } catch(e){}
+
 
     // Garantias extras de render (se essas funções existirem no seu app)
     try { SystemControlPro.renderOrders  && SystemControlPro.renderOrders(); } catch(e){}
@@ -324,9 +403,24 @@ try {
     if (login) login.style.display = 'flex';
   }
 
-  function restaurarSessao() {
-    // Se quiser restaurar automaticamente, implemente aqui algo similar ao que você já tinha
-    // Por enquanto, deixo neutro para evitar confusão
+    function restaurarSessao() {
+    try {
+      // 1) tenta sessionStorage (sessão atual)
+      let s = null;
+      try { s = JSON.parse(sessionStorage.getItem('scp_session') || 'null'); } catch {}
+
+      // 2) senão, tenta última sessão persistida no localStorage
+      if (!s) {
+        try { s = JSON.parse(localStorage.getItem('scp_last_session') || 'null'); } catch {}
+      }
+      if (!s || !s.empresaId || !s.username) return; // nada pra restaurar
+
+      // Monta o app como se tivesse logado agora
+      montarAppDepoisDoLogin(s);
+    } catch (e) {
+      console.warn('[restaurarSessao] falhou', e);
+    }
   }
+
 
 })();

@@ -10,6 +10,15 @@
       "email": "contato@lojaexemplo1.com.br"
     },
     {
+      "id": 2,
+      "empresaId": 1,
+      "username": "vendedor",
+      "password": "senha123",
+      "role": "seller",
+      "ativo": true,
+      "email": "vendedor@empresa.com"
+    },
+    {
       "id": 1,
       "empresaId": 2,
       "username": "admin",
@@ -17,6 +26,15 @@
       "role": "admin",
       "ativo": true,
       "email": "contato@lojaexemplo2.com.br"
+    },
+    {
+      "id": 2,
+      "empresaId": 2,
+      "username": "dapaz",
+      "password": "123",
+      "role": "admin",
+      "ativo": true,
+      "email": ""
     },
     {
       "id": 1,
@@ -30,18 +48,9 @@
     {
       "id": 2,
       "empresaId": 3,
-      "username": "ingrid",
+      "username": "Ingrid",
       "password": "123",
       "role": "admin",
-      "ativo": true,
-      "email": ""
-    },
-    {
-      "id": 3,
-      "empresaId": 3,
-      "username": "joao",
-      "password": "123",
-      "role": "seller",
       "ativo": true,
       "email": ""
     }

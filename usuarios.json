@@ -46,11 +46,11 @@
       "email": ""
     },
     {
-      "id": 2,
+      "id": 3,
       "empresaId": 3,
-      "username": "Ingrid",
+      "username": "joao",
       "password": "123",
-      "role": "admin",
+      "role": "seller",
       "ativo": true,
       "email": ""
     }

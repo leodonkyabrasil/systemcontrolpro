@@ -21,40 +21,72 @@
   })();
 </script>
 
-<!-- 2) Semeia o storage a partir de /empresas.json se estiver vazio -->
+
+
+<!-- 2) Arquivo é Lei: sempre reidratar do empresas.json + usuarios.json -->
 <script>
-  (async function seedFromJSONIfEmpty(){
-    var KEY = 'systemControlPro_data';
-    if (localStorage.getItem(KEY)) return; // já tem dados, sai
+  async function loadJSONNoCache(url){
+    const r = await fetch(url + '?v=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(url + ' HTTP ' + r.status);
+    return r.json();
+  }
 
+  async function applyFilesAuthority(){
     try{
-      var r = await fetch('./empresas.json?v=' + Date.now(), { cache:'no-store' });
-      var j = await r.json();
-      var empresas = Array.isArray(j.empresas) ? j.empresas : [];
+      // Carregar arquivos sem cache
+      const ej = await loadJSONNoCache('./empresas.json');
+      const uj = await loadJSONNoCache('./usuarios.json');
 
-      var data = {
-        empresas, usuarios:{}, produtos:{}, clientes:{},
-        orcamentos:{}, pedidos:{}, configuracoes:{}, _auditLogs:[]
+      const empresas = Array.isArray(ej?.empresas) ? ej.empresas : [];
+      const usuariosFlat = Array.isArray(uj?.usuarios) ? uj.usuarios
+                          : (Array.isArray(uj) ? uj : []);
+
+      // Espelhos planos usados por partes do app
+      localStorage.setItem('empresas', JSON.stringify(empresas));
+      localStorage.setItem('usuarios', JSON.stringify(usuariosFlat));
+
+      // Montar systemControlPro_data por empresa
+      const data = {
+        empresas,
+        usuarios: {}, produtos: {}, clientes: {},
+        orcamentos: {}, pedidos: {}, configuracoes: {}, _auditLogs: []
       };
+
       empresas.forEach(function(emp){
-        var id = emp.id;
-        data.usuarios[id] = [{
-          id:1, username:'admin', password:'admin123',
-          name:'Administrador', role:'admin', status:'active',
-          email: emp.email || ''
-        }];
-        data.produtos[id]=[]; data.clientes[id]=[];
-        data.orcamentos[id]=[]; data.pedidos[id]=[];
-        data.configuracoes[id] = { empresaId:id, metaMensal:10000, comissaoPercentual:5 };
+        const id = Number(emp.id);
+        data.usuarios[id] = usuariosFlat
+          .filter(u => Number(u.empresaId) === id)
+          .map(u => ({
+            id: Number(u.id || 0) || 1,
+            empresaId: id,
+            username: String(u.username || ''),
+            password: String(u.password || ''),
+            name: u.name || (u.username || ''),
+            role: u.role || 'seller',
+            status: (u.ativo === false) ? 'inactive' : 'active',
+            email: u.email || ''
+          }));
+
+        data.produtos[id] = data.produtos[id] || [];
+        data.clientes[id] = data.clientes[id] || [];
+        data.orcamentos[id] = data.orcamentos[id] || [];
+        data.pedidos[id] = data.pedidos[id] || [];
+        data.configuracoes[id] = data.configuracoes[id] || { empresaId:id, metaMensal:10000, comissaoPercentual:5 };
       });
 
-      localStorage.setItem(KEY, JSON.stringify(data));
-      console.log('[index] empresas.json aplicado ao systemControlPro_data');
+      localStorage.setItem('systemControlPro_data', JSON.stringify(data));
+      console.log('[index] Arquivo é Lei aplicado (empresas/usuarios dos JSONs).');
     }catch(e){
-      console.warn('Falha ao semear com empresas.json', e);
+      console.warn('Falha ao aplicar Arquivo é Lei:', e);
     }
+  }
+
+  // Executa antes do app inicializar
+  (async function bootFilesAreAuthority(){
+    await applyFilesAuthority();
   })();
 </script>
+
 
     <script>
   // Desliga a empresa de demonstração no login
@@ -1871,6 +1903,16 @@ normalizeData: function () {
   SystemControlPro.backupData();
 });
 
+// Login form
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+  loginForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    this.handleLogin(ev);
+  });
+}
+
+
 document.getElementById('restore-btn')?.addEventListener('click', () => {
   document.getElementById('restore-input').click();
 });
@@ -1912,7 +1954,7 @@ document.getElementById('restore-input')?.addEventListener('change', (e) => {
                     if (empresa.status === 'active' || 
                         (empresa.status === 'trial' && this.isTrialValid(empresa.dataCriacao))) {
                         const option = document.createElement('option');
-                        option.value = empresa.id;
+                        option.textContent = empresa.nome || `Empresa ${String(empresa.id).padStart(4,'0')}`;
                         // MOSTRA SÓ O CÓDIGO, NÃO O NOME
                         const codigo = String(empresa.id).padStart(4,'0');
                         option.textContent = `Empresa ${codigo}`;
@@ -1997,18 +2039,98 @@ saveFiscalSettings: function(){
                 this.saveToStorage();
             },
             
-            // Manipular login (delegando para o fluxo do vendedor.js)
-            handleLogin: function(event) {
-                try {
-                    return typeof onLoginSubmit === 'function'
-                        ? onLoginSubmit(event)
-                        : false;
-                } catch (e) {
-                    console.error('[handleLogin->onLoginSubmit] falhou', e);
-                    alert('Falha ao processar login. Veja o Console (F12).');
-                    return false;
-                }
-            },
+            // Manipular login (validação local)
+handleLogin: function (event) {
+  try {
+    const empSel = document.getElementById('empresa')?.value;
+    const username = document.getElementById('username')?.value?.trim();
+    const password = document.getElementById('password')?.value?.trim();
+    const remember = document.getElementById('remember-me')?.checked === true;
+
+    if (!empSel || !username || !password) {
+      alert('Preencha empresa, usuário e senha.');
+      return false;
+    }
+
+    // Admin do sistema (opção especial do combo)
+    if (empSel === 'system_admin') {
+      if (username === 'sysadmin' && password === 'adm123') {
+        sessionStorage.setItem('scp_session', JSON.stringify({
+          empresaId: 0,
+          username,
+          role: 'system_admin',
+          loginAt: Date.now(),
+          remember
+        }));
+        this.currentUser = { username, role: 'system_admin' };
+        this.currentEmpresa = null;
+        this.showApp();
+        return false;
+      } else {
+        alert('Credenciais do administrador do sistema inválidas.');
+        return false;
+      }
+    }
+
+    // Login por empresa
+    const empresaId = parseInt(empSel, 10);
+
+    // 1) Ler usuários do storage normal (estrutura por empresa)…
+    const usersByEmp = this.usuarios?.[empresaId] || [];
+
+    // 2) …e também do espelho plano (core-storage/seed usa array plano em localStorage['usuarios'])
+    let flat = [];
+    try { flat = JSON.parse(localStorage.getItem('usuarios') || '[]'); } catch {}
+    const flatForEmp = Array.isArray(flat)
+      ? flat.filter(u => Number(u.empresaId) === empresaId)
+      : [];
+
+    // Junta as duas fontes em uma só lista comparável
+    const candidatos = [
+      ...usersByEmp.map(u => ({
+        username: u.username, password: u.password, role: u.role || 'seller', ativo: (u.status || 'active') !== 'inactive'
+      })),
+      ...flatForEmp.map(u => ({
+        username: u.username, password: u.password, role: u.role || 'seller', ativo: u.ativo !== false
+      }))
+    ];
+
+    // Procura usuário ativo com user/senha iguais
+    const ok = candidatos.find(u =>
+      u.ativo !== false &&
+      String(u.username).trim().toLowerCase() === username.toLowerCase() &&
+      String(u.password) === password
+    );
+
+    if (!ok) {
+      alert('Usuário ou senha inválidos para a empresa selecionada.');
+      return false;
+    }
+
+    // Salva sessão (controle de sessão/tema pode continuar no storage, o resto fica em arquivo)
+    const sess = {
+      empresaId,
+      username,
+      role: ok.role || 'seller',
+      loginAt: Date.now(),
+      remember
+    };
+    sessionStorage.setItem('scp_session', JSON.stringify(sess));
+
+    // Atualiza estado atual do app
+    this.currentUser = { username, role: sess.role };
+    this.currentEmpresa = (this.empresas || []).find(e => e.id === empresaId) || null;
+
+    // Entra no app
+    this.showApp();
+    return false;
+  } catch (e) {
+    console.error('[handleLogin] erro:', e);
+    alert('Falha ao processar login. Veja o Console (F12).');
+    return false;
+  }
+},
+
             
             
                 // Mostrar aplicação
@@ -5880,12 +6002,20 @@ window.onload = async () => {
   });
 </script>
 
-<!-- 2) Carregar o core e o portal (defer garante execução antes do DOMContentLoaded) -->
-<script src="core-storage.js" defer></script>
-<script src="vendedor.js" defer></script>
-
+<script>
+  // Garante que o login não recarrega a página e chama nossa lógica
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = document.getElementById('login-form');
+    if (form && typeof SystemControlPro?.handleLogin === 'function') {
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        SystemControlPro.handleLogin(e);
+      });
+    }
+  });
+</script>
  
-
+<script src="core-storage.js" defer></script>
 </body>
 
 </html>
